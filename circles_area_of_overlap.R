@@ -168,6 +168,7 @@ Librino_N <- function(centers_x, centers_y, radii){
 
             if (any(subtrelis[[3]] <1e-6) ){
               a_i[[u]][v] <-  min(Abar[[u-1]])  # m = 0
+              
             }else{
               if (cgam > bgam & # c > b
                   abs(cgam - cgam) < 1e-5){ # a = c
@@ -221,12 +222,17 @@ Librino_N <- function(centers_x, centers_y, radii){
                 if (all(unlist(lapply(inters_pts_inside_circle,
                                       function(x) length(x) == 3)))){
                   if (sum(the_one)==1){
+                    
                     a_i[[u]][v] <-   min(Abar[[u-1]])
                   }else{
+                    
                     a_i[[u]][v] <- max(-Abar[[u-2]])
                   }
                 }else{
-                  a_i[[u]][v] <-  min(Abar[[u-1]])}
+                  #a_i[[u]][v] <-  min(Abar[[u-1]])
+                  a_i[[u]][v] <-  max(-Abar[[u-2]])
+                  }
+                
               }else{
                 a_i[[u]][v] <-  max(-Abar[[u-2]])
               }}
@@ -431,8 +437,6 @@ validate_Librino <- function(librino, radii){
 # graficame_esta(xes[c(2:5)], yes[2:5], ra[2:5])
 # intersss<- Librino_N(xes[2:5], yes[2:5], ra[2:5])
 # validate_Librino(unlist(intersss), radii = ra[2:5])
-# intersss
-# kijuhg
 # 
 # xes <-c(10.000000,  9.562275 , 9.685901 ,11.710477 , 7.373770 , 7.513670 ,11.236690)
 # yes <-c(10.000000 ,12.206473 , 9.425814 , 9.633818 ,11.798342,  8.383458,  6.138875)
@@ -548,17 +552,17 @@ validate_Librino <- function(librino, radii){
 # graficame_esta(xes[settt], yes[settt], ra[settt])
 # intersection_two_circles(xes[c(6,8)], yes[c(6,8)], ra[c(6,8)])
 # validate_Librino(unlist(Librino_N(xes[settt], yes[settt], ra[settt])), radii = ra[settt])
-# 
+# # 
 #
 # random tests
 # set.seed(26)
 # enes <-1000
 # for (i in 1:enes){
-   xes <- runif(6, min = 0, max = 2)
-   yes <- runif(6, min = 0, max = 2)
-   ra <- runif(6, min = 1, max = 1.5)                               #                                 radii = ra
-   validate_Librino(unlist(Librino_N(xes, yes, ra)),  radii = ra)
-                    #                                 radii = ra)
+   # xes <- runif(6, min = 0, max = 2)
+   # yes <- runif(6, min = 0, max = 2)
+   # ra <- runif(6, min = 1, max = 1.5)                               #                                 radii = ra
+   # validate_Librino(unlist(Librino_N(xes, yes, ra)),  radii = ra)
+   #                  #                                 radii = ra)
    # if (is.numeric(validate_Librino(unlist(Librino_N(xes, yes, ra)), 
 #                                 radii = ra))){
 #  
