@@ -95,7 +95,7 @@ ws <- 20 # world size
 
 timesteps <- 20   # length of each run
 
-n_reps <- 20 # number of LHS samples
+n_reps <- 15 # number of LHS samples
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -112,13 +112,13 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                                                            upper = 1.5, 
                                                            n_samples =n_reps)),#max initial size,
                       sample(uniform_LHS_sample_from_range(lower = 0.01, 
-                                                           upper = 0.075, 
-                                                           n_samples = n_reps)), #pop densiti 4 - 30/ws**2
+                                                           upper = 0.05, 
+                                                           n_samples = n_reps)), #pop densiti 4 - 20/ws**2
                       sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 2, 
                                                            n_samples =n_reps)),# competition asymmetry parameter
                       sample(uniform_LHS_sample_from_range(lower = 1, 
-                                                           upper = 4, 
+                                                           upper = 5, 
                                                            n_samples =n_reps)), # max growing size
                       sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 2, 
@@ -165,16 +165,16 @@ for (rep in 1:nrow(LHS_param)){
     sz = runif(initial.n, min = 0.5, max = max_initial_size))
   
   # modify plant coordinates accoding to spatial disarrangement parameter
-  plantcomm$x <- (plantcomm$x + runif(nrow(plantcomm), 
-                                     min = -world_reachablity * ws/2, 
-                                     max = world_reachablity * ws/2)) %% ws
-  plantcomm$y <- (plantcomm$y + runif(nrow(plantcomm), 
-                                      min = -world_reachablity * ws/2, 
-                                      max = world_reachablity * ws/2)) %% ws
+  
+  random_angles <- runif(nrow(plantcomm), 
+                         min = 0, max = 2*pi)
+  
+  plantcomm$x <- plantcomm$x + cos(random_angles)*world_reachablity
+  plantcomm$y <- plantcomm$y + sin(random_angles)*world_reachablity
   
 
-  # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, 
-  #                main=paste("density", round(pop_density,2), 
+  # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
+  #                main=paste("density", round(pop_density,2),
   #                           "reachabil", round(world_reachablity,2)))
 
   a <- (-4*max_grwth_rt)/(max_S**2)
@@ -221,7 +221,7 @@ for (rep in 1:nrow(LHS_param)){
   	for(j in intersect_to_compute){
   	  
   	  if (j %in% cant_grow_more){
-  	    if((a * plantcomm$sz[j]**2) + (b * plantcomm$sz[j]) > 0){
+  	    if((a * plantcomm$sz[j]**2) + (b * plantcomm$sz[j]) > 1e-6){
   	      stop("Algo mal con optimizacion de crecimiento")
   	    }
   	    next
@@ -327,7 +327,8 @@ for (rep in 1:nrow(LHS_param)){
 
  LHS_final <- as.data.frame(LHS_param)
  LHS_final$output_meassure <- output_meassure
-# 
+
+ # 
 
 # write.csv(LHS_final, file = paste("LHS_sampling_results_",
 #                                  n_reps,
@@ -337,12 +338,13 @@ for (rep in 1:nrow(LHS_param)){
 cor(LHS_final$output_meassure, LHS_final[,1:5], )
 
 cor.test(LHS_final$output_meassure, LHS_final$max_initial_sz)
+
 #
 #
 # png("correlation_plots.png",   width = 18, height = 18, units = "cm",
 #     res = 300)
 # 
-# par(mfrow=c(2,2))
+# par(mfrow=c(2,3))
 # with(LHS_final, {
 #   plot(pop_density, output_meassure,
 #      ylab=bquote(sigma[S]), xlab = "D" , pch=19)
@@ -367,5 +369,17 @@ cor.test(LHS_final$output_meassure, LHS_final$max_initial_sz)
 #   grid()
 #   points(comp_symmetry, output_meassure, pch=19)
 #   text(x = 0.15, 0.3, "D", cex=1.5, col="red")
+# 
+#   plot(max_growing_size, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
+#   grid()
+#   points(max_growing_size, output_meassure, pch=19)
+#   text(x = 0.15, 0.3, "max_growing_size", cex=1.5, col="red")
+# 
+#   plot(max_growth_rate, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
+#   grid()
+#   points(max_growth_rate, output_meassure, pch=19)
+#   text(x = 0.15, 0.3, "max_growth_rate", cex=1.5, col="red")
 # })
 #  dev.off()
