@@ -95,7 +95,7 @@ ws <- 20 # world size
 
 timesteps <- 20   # length of each run
 
-n_reps <- 15 # number of LHS samples
+n_reps <- 50 # number of LHS samples
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -106,22 +106,22 @@ uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
 
 # cada fila va a ser una fila de parametros a usar
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 1, 
-                                                           n_samples =n_reps)), #wrl reach, 0 - 1
+                                                           upper = 3, 
+                                                           n_samples = n_reps)), #wrl reach, 0 - 1
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
-                                                           upper = 1.5, 
-                                                           n_samples =n_reps)),#max initial size,
-                      sample(uniform_LHS_sample_from_range(lower = 0.01, 
-                                                           upper = 0.05, 
-                                                           n_samples = n_reps)), #pop densiti 4 - 20/ws**2
+                                                           upper = 3, 
+                                                           n_samples = n_reps)),#max initial size,
+                      sample(uniform_LHS_sample_from_range(lower = 4/(ws**2), 
+                                                           upper = 20/(ws**2), 
+                                                           n_samples = n_reps)), #pop densiti 4 - 25/ws**2
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 2, 
+                                                           upper = 5, 
                                                            n_samples =n_reps)),# competition asymmetry parameter
                       sample(uniform_LHS_sample_from_range(lower = 1, 
-                                                           upper = 5, 
+                                                           upper = 3, 
                                                            n_samples =n_reps)), # max growing size
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 2, 
+                                                           upper = 0.3, 
                                                            n_samples =n_reps))), # max growth rate
                     nrow = n_reps)
 
@@ -154,7 +154,7 @@ for (rep in 1:nrow(LHS_param)){
     initial.n <- config_found[which.min(abs(initial.n - config_found))]
   }
   print(initial.n)
-  
+
   # set plants initial coordinates
   coordinates <- generate_initial_points(N = initial.n, ws = ws)
   
@@ -181,7 +181,8 @@ for (rep in 1:nrow(LHS_param)){
   b <- (4*max_grwth_rt)/max_S
   # a < 0 and b > 0
   
-  
+  # meassure of overall variation will be the sum of variation coeficient
+
   for (t in 1:timesteps){
     #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=t)
     print(paste( "t ", t))
@@ -265,7 +266,7 @@ for (rep in 1:nrow(LHS_param)){
     	  #                centers_y = plantcomm_sub$y,
     	  #                radii = plantcomm_sub$sz)
     	  
-    	  if (length(names_original_plantcomm) > 8){
+    	  if (length(names_original_plantcomm) > 9){
     	    print(paste(length(names_original_plantcomm),", grt progress ", plantcomm$sz[j]/max_S))
     	    }
   
@@ -317,69 +318,72 @@ for (rep in 1:nrow(LHS_param)){
   	indgr[indgr < 0] <- 0
   
   	plantcomm$sz = plantcomm$sz + indgr
-  
-  
+
   }
-  output_meassure[rep] <- sd(plantcomm$sz)
+  output_meassure[rep] <- sd(plantcomm$sz)/mean(plantcomm$sz)
 
 }
 
 
  LHS_final <- as.data.frame(LHS_param)
+ LHS_final$pop_size <- sapply(round(LHS_final$pop_density*ws**2), function(x){
+   fi <- x
+   if (! x %in% config_found){
+     fi <- config_found[which.min(abs(x - config_found))]
+   }
+   fi
+ })
  LHS_final$output_meassure <- output_meassure
 
  # 
-
+# 
 # write.csv(LHS_final, file = paste("LHS_sampling_results_",
-#                                  n_reps,
-#                                  "reps_", seed_value,"seed", ".csv",
-#                                  sep = ""))
+#                                 n_reps,
+#                                 "reps_", seed_value,"seed", ".csv",
+#                                 sep = ""))
+ #LHS_final<- read.csv("LHS_sampling_results_25reps_26seed.csv")
+# 
+cor(LHS_final$output_meassure, LHS_final[,1:6] ,
+    method = "pearson")
 
-cor(LHS_final$output_meassure, LHS_final[,1:5], )
+plot_correlation <- function(x, y, xlab, ylab, pch){
+  plot(x, y,
+       ylab=ylab, xlab = xlab, type = "n")
+  grid()
+  abline(lm(y ~ x), col = "red", lwd = 2)
+  points(x, y, pch=pch)
+  cor_tes_res <- cor.test(x, y, method="pearson")
+  text(x=min(x)+diff(range(x))/2, y=max(y)*0.9, cex=1.2,
+       bquote(r==.(round(cor_tes_res$estimate, 2))~", "~p==.(round(cor_tes_res$p.value, 2))))
+}
 
-cor.test(LHS_final$output_meassure, LHS_final$max_initial_sz)
+#png("correlation_plots.png",   width = 24*0.8, height = 16*0.8, units = "cm",
+#    res = 600)
 
-#
-#
-# png("correlation_plots.png",   width = 18, height = 18, units = "cm",
-#     res = 300)
-# 
-# par(mfrow=c(2,3))
-# with(LHS_final, {
-#   plot(pop_density, output_meassure,
-#      ylab=bquote(sigma[S]), xlab = "D" , pch=19)
-#   grid()
-#   points(pop_density, output_meassure, pch=19)
-#   text(x = 0.02, 0.3, "A", cex=1.5, col="red")
-# 
-#   plot(world_reachability, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(kappa) , pch=19)
-#   grid()
-#   points(world_reachability, output_meassure, pch=19)
-#   text(x = 0.1, 0.3, "B", cex=1.5, col="red")
-# 
-#   plot(max_initial_sz, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(s[0]) , pch=19)
-#   grid()
-#   points(max_initial_sz, output_meassure, pch=19)
-#   text(x = 0.65, 0.3, "C", cex=1.5, col="red")
-# 
-#   plot(comp_symmetry, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
-#   grid()
-#   points(comp_symmetry, output_meassure, pch=19)
-#   text(x = 0.15, 0.3, "D", cex=1.5, col="red")
-# 
-#   plot(max_growing_size, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
-#   grid()
-#   points(max_growing_size, output_meassure, pch=19)
-#   text(x = 0.15, 0.3, "max_growing_size", cex=1.5, col="red")
-# 
-#   plot(max_growth_rate, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
-#   grid()
-#   points(max_growth_rate, output_meassure, pch=19)
-#   text(x = 0.15, 0.3, "max_growth_rate", cex=1.5, col="red")
-# })
-#  dev.off()
+par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1)
+with(LHS_final,  {
+  plot_correlation(pop_density, output_meassure,
+     ylab=bquote(sigma[S]), xlab = "D" , pch=19)
+  #text(x = 0.02, 0.3, "A", cex=1.5, col="red")
+
+  plot_correlation(world_reachability, output_meassure,
+       ylab=bquote(sigma[S]), xlab = bquote(kappa) , pch=19)
+  #text(x = 0.1, 0.3, "B", cex=1.5, col="red")
+
+  plot_correlation(max_initial_sz, output_meassure,
+       ylab=bquote(sigma[S]), xlab = bquote(s[0]) , pch=19)
+  #text(x = 0.65, 0.3, "C", cex=1.5, col="red")
+
+  plot_correlation(comp_symmetry, output_meassure,
+       ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
+  #text(x = 0.15, 0.3, "D", cex=1.5, col="red")
+
+  plot_correlation(max_growing_size, output_meassure,
+       ylab=bquote(sigma[S]), xlab = bquote(S[max]) , pch=19)
+  #text(x = 0.15, 0.3, "E", cex=1.5, col="red")
+
+  plot_correlation(max_growth_rate, output_meassure,
+       ylab=bquote(sigma[S]), xlab = bquote(M[grt]) , pch=19)
+  #text(x = 0.15, 0.3, "F", cex=1.5, col="red")
+})
+  #dev.off()

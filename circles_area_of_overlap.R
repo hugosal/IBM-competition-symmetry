@@ -8,7 +8,6 @@
 
 # Use the functions that compute the area of overlap of 2 and 3 circles
 
-#Rprof(tmp <- tempfile(), line.profiling=TRUE)
 
 source("intersection_three_circles.R")
 
@@ -54,7 +53,7 @@ Librino_N <- function(centers_x, centers_y, radii){
   }
   
   # This function returns the transition matrix of a corresponding 
-  # list of areas of  overlap a
+  # list of areas of  overlap a_i
   
   transition_from_a_i <- function(a, start){
     transition_matrices_a <- list()
@@ -89,24 +88,19 @@ Librino_N <- function(centers_x, centers_y, radii){
   }else{
     
     d <- as.matrix(dist(matrix(c(centers_x, centers_y), ncol = 2)))
-    vector_dec_from_bin <- numeric(strtoi(paste(rep("1", N), collapse = ""), 
-                                          base = 2))
-    
+    vector_dec_from_bin <- numeric(2**N)
+
     names(vector_dec_from_bin) <- sapply(X = 1:length(vector_dec_from_bin),
                                          FUN = function(x){
                               bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
                               substr(bin, start = nchar(bin) - N + 1 , stop = nchar(bin))
                                          } )
     
-    a_i <- list()
-    
     sum_binary <- sapply(names(vector_dec_from_bin), 
                          FUN = function(x){sum(as.numeric(strsplit(x, "")[[1]]))})
     
-    for (j in 1:N){
-      a_i[[j]] <- sort(which(sum_binary == j), decreasing = TRUE)
-    }
-    
+    a_i <- lapply(1:N, function(x) sort(which(sum_binary == x), decreasing = TRUE) )
+
     # # Transition matrices of the complete trellis 
     
     transition_matrices <- transition_from_a_i(a_i, start = 1)
@@ -114,7 +108,7 @@ Librino_N <- function(centers_x, centers_y, radii){
     # Areas of a_1 are the areas of each circle
     
     a_i[[1]] <- sapply(names(a_i[[1]]), function(x){
-      areas[circle_number_from_binary(x)]}) # nueva 
+      areas[circle_number_from_binary(x)]})
     
     # Areas of a_2 are the areas of each pairs of circles intersections
     
@@ -122,8 +116,7 @@ Librino_N <- function(centers_x, centers_y, radii){
       this_pair <- circle_number_from_binary(x)
       intersection_two_circles(centers_x = centers_x[this_pair],
                                centers_y = centers_y[this_pair],
-                               radii = radii[this_pair])
-    }) 
+                               radii = radii[this_pair])    }) 
     
     # Areas of a_3 are the areas of each threecircle
     a_i[[3]] <- sapply(names(a_i[[3]]), function(x){
@@ -135,22 +128,28 @@ Librino_N <- function(centers_x, centers_y, radii){
     
     # Areas of intersection of a_n n>= 4 are computed using a_bar vectors
     # 
+    
     if (N >= 4){
+      
+      
       for (u in 4:length(a_i)){
-        
         for (v in seq_along(a_i[[u]])){
-          Abar<-list()
           another_one <- u != 4 # this is becasue if  u=4, a_1 may be necessary
-          minimum_depth <- if (u == 4) 1 else u - 2 # 1 - another_one
+          minimum_depth <- ifelse (u == 4, 1, u - 2) # 1 - another_one
+          Abar <- vector(mode = "list", length = u - 1 - another_one)
           subtrelis <- sub_trellis(nvert = u, nelement =  v, original = a_i, start = minimum_depth )
           transicion_sub <- transition_from_a_i(subtrelis, start = minimum_depth)
-
+          # aqui si puedo poner un next quitaria mucho
+          
+          if(any(subtrelis[[length(subtrelis)]]==0)){
+            a_i[[u]][v] <-0
+            next}
+          ########en construccion
+          
           for (e in minimum_depth:(u - 1 - another_one )){
             product_sum <- 0
             if (e < u - 1){
-
               for (j in (e + 1):(u - 1)){
-
                 tnk <- transition_n_to_k(n = e,
                                          k = j - e,
                                          transitions = transicion_sub)
@@ -160,57 +159,57 @@ Librino_N <- function(centers_x, centers_y, radii){
             }
             Abar[[e]] <- subtrelis[[e]] - product_sum
           }
-
+          
           if (u == 4){
             agam <- min(Abar[[1]])
             bgam <- max(-Abar[[2]])
             cgam <- min(Abar[[3]])
-
+            
             if (any(subtrelis[[3]] <1e-6) ){
               a_i[[u]][v] <-  min(Abar[[u-1]])  # m = 0
               
             }else{
               if (cgam > bgam & # c > b
                   abs(cgam - cgam) < 1e-5){ # a = c
-
+                
                 four_circles <- circle_number_from_binary(names(a_i[[u]][v]))
                 combinations <- combn(four_circles, m = 2)
-
+                
                 # get all circles intersection points
                 intersc_pts <- lapply(1:ncol(combinations), FUN = function(x){
                   c1 <- combinations[1, x]
                   c2 <- combinations[2, x]
                   D_c1_c2 <- d[c1, c2]
-
+                  
                   two_circles_inters_points(centers_x = centers_x[c(c1, c2)],
                                             centers_y = centers_y[c(c1, c2)],
                                             radii = radii[c(c1, c2)],
                                             distance = D_c1_c2,
                                             circle_numbers = c(c1, c2))
                 })
-
+                
                 intersections_mat <- do.call(rbind, intersc_pts)
-
+                
                 # get which intersection points are inside each circle,
                 # not considering the intersections with that circle
-
+                
                 inters_pts_inside_circle <- lapply(four_circles, function(x){
                   distances_to_inters <- as.matrix(dist(rbind(
                     matrix(c(centers_x[x], centers_y[x]), nrow = 1),
                     intersections_mat)))[, 1]
-
+                  
                   not_including <-sapply(rownames(intersections_mat), function(y){
                     ! as.character(x) %in% strsplit(y, split = ":")[[1]]
                   })
                   unname(which(distances_to_inters[-1] < radii[x] & not_including))
                 })
-
+                
                 the_one <- logical(4)
-
+                
                 # Find if the intersection of the points
                 # inside one of the circles with the other circles is
                 # just one element
-
+                
                 for (j in seq_along(inters_pts_inside_circle)){
                   the_one[j] <- all(sapply(seq_along(inters_pts_inside_circle)[-j],
                                            function(x){
@@ -218,7 +217,7 @@ Librino_N <- function(centers_x, centers_y, radii){
                                                               inters_pts_inside_circle[[x]]))==1
                                            }))
                 }
-
+                
                 if (all(unlist(lapply(inters_pts_inside_circle,
                                       function(x) length(x) == 3)))){
                   if (sum(the_one)==1){
@@ -231,39 +230,180 @@ Librino_N <- function(centers_x, centers_y, radii){
                 }else{
                   #a_i[[u]][v] <-  min(Abar[[u-1]])
                   a_i[[u]][v] <-  max(-Abar[[u-2]])
-                  }
+                }
                 
               }else{
                 a_i[[u]][v] <-  max(-Abar[[u-2]])
               }}
           }else{
             a_i[[u]][v] <- max(-Abar[[u-2]])
-            }}
+          }}
       }
     }
     
+    
+    # asi estavba
+    # if (N >= 4){
+    #   for (u in 4:length(a_i)){
+    #     
+    #     for (v in seq_along(a_i[[u]])){
+    #       Abar<-list()
+    #       another_one <- u != 4 # this is becasue if  u=4, a_1 may be necessary
+    #       minimum_depth <- if (u == 4) 1 else u - 2 # 1 - another_one
+    #       subtrelis <- sub_trellis(nvert = u, nelement =  v, original = a_i, start = minimum_depth )
+    #       transicion_sub <- transition_from_a_i(subtrelis, start = minimum_depth)
+    #       ######### en construccion
+    #       # aqui si puedo poner un next quitaria mucho
+    #       
+    #       if(any(subtrelis[[length(subtrelis)]]==0)){
+    #         a_i[[u]][v] <-0
+    #         next}
+    #       ########en construccion
+    # 
+    #       for (e in minimum_depth:(u - 1 - another_one )){
+    #         product_sum <- 0
+    #         if (e < u - 1){
+    # 
+    #           for (j in (e + 1):(u - 1)){
+    # 
+    #             tnk <- transition_n_to_k(n = e,
+    #                                      k = j - e,
+    #                                      transitions = transicion_sub)
+    #             this_rep <- (-1)**(j - e + 1) * (t(tnk) %*% as.matrix(subtrelis[[j]]))
+    #             product_sum <- product_sum + this_rep
+    #           }
+    #         }
+    #         Abar[[e]] <- subtrelis[[e]] - product_sum
+    #       }
+    # 
+    #       if (u == 4){
+    #         agam <- min(Abar[[1]])
+    #         bgam <- max(-Abar[[2]])
+    #         cgam <- min(Abar[[3]])
+    # 
+    #         if (any(subtrelis[[3]] <1e-6) ){
+    #           a_i[[u]][v] <-  min(Abar[[u-1]])  # m = 0
+    #           
+    #         }else{
+    #           if (cgam > bgam & # c > b
+    #               abs(cgam - cgam) < 1e-5){ # a = c
+    # 
+    #             four_circles <- circle_number_from_binary(names(a_i[[u]][v]))
+    #             combinations <- combn(four_circles, m = 2)
+    # 
+    #             # get all circles intersection points
+    #             intersc_pts <- lapply(1:ncol(combinations), FUN = function(x){
+    #               c1 <- combinations[1, x]
+    #               c2 <- combinations[2, x]
+    #               D_c1_c2 <- d[c1, c2]
+    # 
+    #               two_circles_inters_points(centers_x = centers_x[c(c1, c2)],
+    #                                         centers_y = centers_y[c(c1, c2)],
+    #                                         radii = radii[c(c1, c2)],
+    #                                         distance = D_c1_c2,
+    #                                         circle_numbers = c(c1, c2))
+    #             })
+    # 
+    #             intersections_mat <- do.call(rbind, intersc_pts)
+    # 
+    #             # get which intersection points are inside each circle,
+    #             # not considering the intersections with that circle
+    # 
+    #             inters_pts_inside_circle <- lapply(four_circles, function(x){
+    #               distances_to_inters <- as.matrix(dist(rbind(
+    #                 matrix(c(centers_x[x], centers_y[x]), nrow = 1),
+    #                 intersections_mat)))[, 1]
+    # 
+    #               not_including <-sapply(rownames(intersections_mat), function(y){
+    #                 ! as.character(x) %in% strsplit(y, split = ":")[[1]]
+    #               })
+    #               unname(which(distances_to_inters[-1] < radii[x] & not_including))
+    #             })
+    # 
+    #             the_one <- logical(4)
+    # 
+    #             # Find if the intersection of the points
+    #             # inside one of the circles with the other circles is
+    #             # just one element
+    # 
+    #             for (j in seq_along(inters_pts_inside_circle)){
+    #               the_one[j] <- all(sapply(seq_along(inters_pts_inside_circle)[-j],
+    #                                        function(x){
+    #                                          length(intersect(inters_pts_inside_circle[[j]],
+    #                                                           inters_pts_inside_circle[[x]]))==1
+    #                                        }))
+    #             }
+    # 
+    #             if (all(unlist(lapply(inters_pts_inside_circle,
+    #                                   function(x) length(x) == 3)))){
+    #               if (sum(the_one)==1){
+    #                 
+    #                 a_i[[u]][v] <-   min(Abar[[u-1]])
+    #               }else{
+    #                 
+    #                 a_i[[u]][v] <- max(-Abar[[u-2]])
+    #               }
+    #             }else{
+    #               #a_i[[u]][v] <-  min(Abar[[u-1]])
+    #               a_i[[u]][v] <-  max(-Abar[[u-2]])
+    #               }
+    #             
+    #           }else{
+    #             a_i[[u]][v] <-  max(-Abar[[u-2]])
+    #           }}
+    #       }else{
+    #         a_i[[u]][v] <- max(-Abar[[u-2]])
+    #         }}
+    #   }
+    # }
+    # fin asi estaba
+    
     # Compute exclusive intersection areas using a_i vectors
+    
+    # asi nuevo
     Intersections_final <- list()
     
     for (i in 1:N){
       This_intersection_area <- a_i[[i]]
       product_sum <- 0
-      if (i < N){ 
-        for (j in (i+1):N){
+      if (i < N){
+        product_sum <- product_sum + apply( sapply((i+1):N, function(j){
           
-          tnk <- transition_n_to_k(n = i, 
-                                   k = j - i, 
+          tnk <- transition_n_to_k(n = i,
+                                   k = j - i,
                                    transitions = transition_matrices)
           
-          this_rep <- ((-1)**(j - i + 1)) * (t(tnk) %*% as.matrix(a_i[[j]]))
-          
-          product_sum <- product_sum + this_rep
-          
-        }
+          ((-1)**(j - i + 1)) * (t(tnk) %*% as.matrix(a_i[[j]]))}), MARGIN = 1, sum)
       }
-      
       Intersections_final[[i]] <- as.matrix( This_intersection_area - product_sum )
     }
+    ### fin nuevo
+    
+    
+    # # asi estaba
+    # Intersections_final <- list()
+    # 
+    # for (i in 1:N){
+    #   This_intersection_area <- a_i[[i]]
+    #   product_sum <- 0
+    #   if (i < N){
+    #     for (j in (i+1):N){
+    # 
+    #       tnk <- transition_n_to_k(n = i,
+    #                                k = j - i,
+    #                                transitions = transition_matrices)
+    # 
+    #       this_rep <- ((-1)**(j - i + 1)) * (t(tnk) %*% as.matrix(a_i[[j]]))
+    # 
+    #       product_sum <- product_sum + this_rep
+    # 
+    #     }
+    #   }
+    # 
+    #   Intersections_final[[i]] <- as.matrix( This_intersection_area - product_sum )
+    # }
+    # ### fin asi estaba
+    
     
     # customize labels and remove zero elements
     
@@ -406,20 +546,40 @@ validate_Librino <- function(librino, radii){
 # 
 # 
 # 
-# ene <- 10
+
+#Rprof(tmp <- tempfile(), line.profiling=TRUE)
+
+# system.time({
+# ene <- 11
 # set.seed(26)
-# 
+
+
+# pruebas de un configuraciones unidas
 # angles <- runif(n = ene, min = 0, max = 6*pi)
+#xes <- sin(angles)
+#yes <- cos(angles)
+#ra <- rep(2, ene)
+
+# # aleatorios
+# xes <- runif(ene, min = 0, max = 6)
+# yes <- runif(ene, min = 0, max = 6)
+# ra <- runif(ene, min = 1, max = 2)
 # 
-# xes <- sin(angles)
-# yes <- cos(angles)
-# ra <- rep(2, ene)
+# #graficame_esta(xes, yes, ra)
 # 
 # de <- Librino_N(centers_x = xes, centers_y = yes, radii = ra)
 # 
-# validate_Librino(unlist(de), radii = ra)
-# Rprof()
-# summaryRprof(tmp, lines = "show")
+# if (is.numeric(validate_Librino(unlist(de), radii = ra))){stop("esta mal")}
+# })# este debe cerrar el system.time({
+# #print(Sys.time())
+# 
+# # a mejorar
+# #user  system elapsed 
+# #16.36    0.17   17.28 
+
+
+#Rprof()
+#summaryRprof(tmp)#, lines = "show")
 # 
 # 
 #
@@ -558,38 +718,37 @@ validate_Librino <- function(librino, radii){
 # set.seed(26)
 # enes <-1000
 # for (i in 1:enes){
-   # xes <- runif(6, min = 0, max = 2)
-   # yes <- runif(6, min = 0, max = 2)
-   # ra <- runif(6, min = 1, max = 1.5)                               #                                 radii = ra
-   # validate_Librino(unlist(Librino_N(xes, yes, ra)),  radii = ra)
-   #                  #                                 radii = ra)
-   # if (is.numeric(validate_Librino(unlist(Librino_N(xes, yes, ra)), 
+# xes <- runif(6, min = 0, max = 2)
+# yes <- runif(6, min = 0, max = 2)
+# ra <- runif(6, min = 1, max = 1.5)                               #                                 radii = ra
+# validate_Librino(unlist(Librino_N(xes, yes, ra)),  radii = ra)
+#                  #                                 radii = ra)
+# if (is.numeric(validate_Librino(unlist(Librino_N(xes, yes, ra)),
 #                                 radii = ra))){
-#  
+# 
 #   stop( paste("falla en ", i))
 # }
 #  if (i==enes) print("exito")}
-# 
-# #graficame_esta(xes, yes, ra)
-#   
+
+#graficame_esta(xes, yes, ra)
+
 # library(rbenchmark)
 # benchmark("2ndopt" = {
 #   set.seed(26)
-#   enes <-1
+#   enes <-100
 #   for (i in 1:enes){
-#     xes <- runif(11, min = 0, max = 4)
-#     yes <- runif(11, min = 0, max = 4)
-#     ra <- runif(11, min = 1, max = 1.5)
+#     xes <- runif(9, min = 0, max = 4)
+#     yes <- runif(9, min = 0, max = 4)
+#     ra <- runif(9, min = 1, max = 1.5)
 #     if (is.numeric(validate_Librino(unlist(Librino_N(xes, yes, ra)),
 #                                     radii = ra))){
 # 
 #       stop( paste("falla en ", i))
 #     }
-#     #if (i==enes) print("exito")
+#     if (i==enes) print("exito")
 #   }
 # },
 # replications = 2,
 # columns = c("test", "replications", "elapsed",
 #             "relative", "user.self", "sys.self"))
-# 
-# 
+
