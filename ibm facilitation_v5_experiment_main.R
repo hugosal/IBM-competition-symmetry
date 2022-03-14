@@ -12,7 +12,7 @@
 source("circles_area_of_overlap.R")
 #source("get_ppis.R")
 
-seed_value <-26
+seed_value <-21
 set.seed(seed_value)
 
 #esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
@@ -28,26 +28,138 @@ center_world_arround <- function(center_xy, ws, coords){
   coords
 }
 
-plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL){
-  colores <- col2rgb(1:4)
+plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE){
+  
+  text_box <- function(x, y, labels, cex){
+    sw   <- strwidth(labels)
+    sh   <- strheight(labels)
+    frsz <- 0
+    
+    if (strwidth(labels)>strwidth("1")){
+      text(x, y, labels, font=2, col="white", cex=cex)
+      text(x, y, labels, cex=cex*0.98, font=1)
+    }else{
+      text(x, y, labels, font=2, col="white", cex=cex)
+      text(x, y, labels, cex=cex*0.98, font=1) # con  el problema del que no se veia bien
+      # aca cambia el 0.98
+    }
+  }
+  
+  colores <- col2rgb(3:6)
   colores <- apply(colores, 2, FUN = function(x)rgb(x[1]/255,
                                                     x[2]/255,
                                                     x[3]/255,
                                                     alpha = 0.5)  )
   plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="x", ylab="y",
-       xlim = c(min(com$x) - max(com$sz), max(ws, max(com$x) + max(com$sz))),
-       ylim = c(min(com$y) - max(com$sz), max(ws, max(com$y) + max(com$sz))))
+       yaxt="n", xaxt="n", yaxs="i", xaxs="i", 
+       xlim = c(0,ws),
+       ylim = c(0,ws))
+  
+  
+  
+  for (j in 1:nrow(com)){
+    
+    if (circle){
+      at_border <- c(com[j, 1] + com[j, 4] > ws | com[j, 1] - com[j, 4] < 0,
+                     com[j, 2] + com[j, 4] > ws | com[j, 2] - com[j, 4] < 0)
+    }else{
+      at_border <- c(abs(com[j, 1]- ws) < 1e-4 | com[j, 1] < 1e-4,
+                     abs(com[j, 2]- ws) < 1e-4 | com[j, 2] < 1e-4)
+      
+    }
+    
+    
+    
+    if (any(at_border)){
+      for(k in list(c(0,0),
+                    c(ws,0),
+                    c(-ws,0),
+                    c(0,ws),
+                    c(0,-ws),
+                    c(ws,ws),
+                    c(-ws,ws)
+      )){
+        if (circle){
+          plotrix::draw.circle(x = com$x[j]+k[1], y = com$y[j]+k[2], radius = com$sz[j], 
+                               col = colores[com$ft[j]])
+        }else{
+          points(x = com$x[j]+k[1], y = com$y[j]+k[2], col=com$ft, pch=19)
+        }
+        
+      }}
+    else{
+      if(circle){
+        plotrix::draw.circle(x = com$x[j], y = com$y[j], radius = com$sz[j], 
+                             col = colores[com$ft[j]])
+      }else{
+        points(com$x, com$y, col=com$ft, pch=19)
+      }
+    }
+    offst <- ws*0.97
+    letter_sz <- 0.9
+    
+    
+    if (numbers){
+      
+      if (sum(at_border) == 0){
+        if (circle){
+          text_box(x = com$x[j], y = com$y[j], labels = j, cex=letter_sz)
+        }else{
+          text_box(x = com$x[j]+(ws-offst), y = com$y[j]+(ws-offst), 
+                   labels = j, cex=letter_sz)
+        }
+        
+      }else if (sum(at_border)==2){
+        if (circle){text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+        }else{
+          text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+          
+        }
+        
+      }else if (at_border[2]){
+        if (circle){
+          text_box(x = com$x[j], ws-offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j], offst, labels = j, cex=letter_sz)
+        }else{
+          text_box(x = com$x[j]+ws-offst, ws-offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j]+ws-offst, offst, labels = j, cex=letter_sz)
+        }
+        
+        
+      }else if (at_border[1]){
+        
+        if (circle){
+          text_box(x = ws-offst , y = com$y[j], labels = j, cex=letter_sz)
+          text_box(x = offst , y = com$y[j], labels = j, cex=letter_sz)
+          
+        }else{
+          text_box(x = ws-offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          text_box(x = offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          
+        }
+        
+      }
+    }}
   
   if (! is.null(ws)){
-    abline(v = 0, h = 0)
-    abline(v = ws, h = ws)
-  }
-  for (j in 1:nrow(com)){
-  plotrix::draw.circle(x = com$x[j], y = com$y[j], radius = com$sz[j], 
-                       col = colores[com$ft[j]])
-    }
-  if (numbers){
-    text(x = com$x, y = com$y, labels = 1:nrow(com))
+    polygon(c(-1, ws+5, ws+5,-1), c(0,0,-10,-10), col="white", border=NA)
+    
+    polygon(c(0, 0, -10,-10), c(0,ws+5,-2,-2), col="white" , border=NA)
+    
+    polygon(c(ws, ws, ws+5,ws+5), c(-6,ws+5,ws+5,-6), col="white", border=NA)
+    
+    polygon(c(-6, ws+5, ws+5,-1), c(ws,ws,ws+5,ws+5), col="white", border=NA)
+    
+    lines(x = c(0, ws), y = c(0, 0)  )
+    lines(x = c(0, 0), y = c(ws, 0)  )
+    lines(x = c(ws, 0), y = c(ws, ws)  )
+    lines(x = c(ws, ws), y = c(ws, 0)  )
   }
 }
 
@@ -93,9 +205,9 @@ generate_initial_points <- function(N, ws){
 
 ws <- 20 # world size 
 
-timesteps <- 20   # length of each run
+timesteps <- 30   # length of each run
 
-n_reps <- 50 # number of LHS samples
+n_reps <- 500 # number of LHS samples
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -115,13 +227,13 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                                                            upper = 20/(ws**2), 
                                                            n_samples = n_reps)), #pop densiti 4 - 25/ws**2
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 5, 
+                                                           upper = 15, 
                                                            n_samples =n_reps)),# competition asymmetry parameter
                       sample(uniform_LHS_sample_from_range(lower = 1, 
-                                                           upper = 3, 
+                                                           upper = 5, 
                                                            n_samples =n_reps)), # max growing size
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 0.3, 
+                                                           upper = 1, 
                                                            n_samples =n_reps))), # max growth rate
                     nrow = n_reps)
 
@@ -134,6 +246,12 @@ colnames(LHS_param) <- c("world_reachability",
 
 output_meassure <- numeric(n_reps)
 
+results_over_time <- data.frame(rep = numeric(n_reps * timesteps),
+                      t = numeric(n_reps * timesteps),
+                      size_mean = numeric(n_reps * timesteps),
+                      size_sd = numeric(n_reps * timesteps), 
+                      size_skew = numeric(n_reps * timesteps))
+counter <- 1
 for (rep in 1:nrow(LHS_param)){
   print(paste( "rep ", rep))
   
@@ -177,14 +295,15 @@ for (rep in 1:nrow(LHS_param)){
   #                main=paste("density", round(pop_density,2),
   #                           "reachabil", round(world_reachablity,2)))
 
-  a <- (-4*max_grwth_rt)/(max_S**2)
-  b <- (4*max_grwth_rt)/max_S
-  # a < 0 and b > 0
-  
+    a <- ( 4 * max_grwth_rt)/max_S
+    b <- ( 4 * max_grwth_rt)/(max_S**2)
+
+    
   # meassure of overall variation will be the sum of variation coeficient
 
   for (t in 1:timesteps){
-    #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=t)
+    #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
+
     print(paste( "t ", t))
   
   	n = nrow(plantcomm)
@@ -201,7 +320,7 @@ for (rep in 1:nrow(LHS_param)){
   	disteffect <- dists < radius_sum
   	n_in_groups <- apply(disteffect, MARGIN = 1, FUN = sum)
   	
-  	# this optimization trick is to coimpute first intersections
+  	# this optimization trick is to compute first intersections
   	# with most circles, then subsets of those groups will be extracted
   	# from memory instead of computed again
   	most_to_least_crowded <- order(n_in_groups, decreasing = T)
@@ -222,12 +341,11 @@ for (rep in 1:nrow(LHS_param)){
   	for(j in intersect_to_compute){
   	  
   	  if (j %in% cant_grow_more){
-  	    if((a * plantcomm$sz[j]**2) + (b * plantcomm$sz[j]) > 1e-6){
+  	    if((a * plantcomm$sz[j]) - (b * plantcomm$sz[j]**2) > 1e-6){
   	      stop("Algo mal con optimizacion de crecimiento")
   	    }
   	    next
   	  }
-  	  
   	  names_original_plantcomm <- which(disteffect[j, ])
   
   	  previously_seen <- unlist(lapply(seq_along(intersections_list_memory),
@@ -262,10 +380,7 @@ for (rep in 1:nrow(LHS_param)){
   
     	  plantcomm_sub[, c(1,2)] <- center_world_arround(coords = plantcomm_sub[, c(1,2)],
     	                                                  center_xy = j, ws = ws)
-    	  # graficame_esta(centers_x = plantcomm_sub$x,
-    	  #                centers_y = plantcomm_sub$y,
-    	  #                radii = plantcomm_sub$sz)
-    	  
+
     	  if (length(names_original_plantcomm) > 9){
     	    print(paste(length(names_original_plantcomm),", grt progress ", plantcomm$sz[j]/max_S))
     	    }
@@ -289,10 +404,11 @@ for (rep in 1:nrow(LHS_param)){
       	                                 controled_percent <- plantcomm$sz[j]**theta/sum(plantcomm$sz[names_original_plantcomm[contestants]]**theta)
       	                                 intersections[x] * controled_percent
       	                               })
-  
+
       	  resources_obtained_p_ind[j] <- sum(resources_obtained)
   
       	  if (length(names_original_plantcomm) > 4){
+      	    #print("usando hack de memoria")
   
       	    intersections_list_memory[[length(intersections_list_memory) + 1]]<- list(
       	      "names_plant" = names_original_plantcomm,
@@ -303,25 +419,30 @@ for (rep in 1:nrow(LHS_param)){
   	# plants increase in size asymptotically
   
   
-  	if(!all(resources_obtained_p_ind <= plantcomm$sz**2*pi)){
+  	if(!all(resources_obtained_p_ind <= pi * plantcomm$sz**2)){
   	  stop("Something wrong with resource partitions")
   	}
-  
-  	# growth rate according to  10.1093/oxfordjournals.aob.a086287
   	
-  	ind_unbound_growth_rate <-  (a * plantcomm$sz**2) + (b * plantcomm$sz)
+  	# 1 in competition_effect indicates a plants without competition
+  	competition_effect <- resources_obtained_p_ind / (pi * plantcomm$sz**2)
   	
-  	growthratemodifier <- resources_obtained_p_ind/(plantcomm$sz**2*pi)
-  
-  	indgr <- growthratemodifier * ind_unbound_growth_rate 
-  
+  	# logistic growth rate according to 10.1016/S0304-3800(98)00182-3
+  	
+  	indgr <-  (competition_effect * a * plantcomm$sz) - (b * plantcomm$sz**2)
+
   	indgr[indgr < 0] <- 0
-  
+
   	plantcomm$sz = plantcomm$sz + indgr
 
-  }
-  output_meassure[rep] <- sd(plantcomm$sz)/mean(plantcomm$sz)
+  	results_over_time[counter, ] <- c(rep, t, 
+  	                                  mean(plantcomm$sz), 
+  	                                  sd(plantcomm$sz), 
+  	                                  e1071::skewness(plantcomm$sz))
+  	counter <- counter + 1
 
+  }
+  #output_meassure[rep] <- sd(plantcomm$sz)/mean(plantcomm$sz)
+  
 }
 
 
@@ -333,7 +454,7 @@ for (rep in 1:nrow(LHS_param)){
    }
    fi
  })
- LHS_final$output_meassure <- output_meassure
+ #LHS_final$output_meassure <- output_meassure
 
  # 
 # 
@@ -341,10 +462,10 @@ for (rep in 1:nrow(LHS_param)){
 #                                 n_reps,
 #                                 "reps_", seed_value,"seed", ".csv",
 #                                 sep = ""))
- #LHS_final<- read.csv("LHS_sampling_results_25reps_26seed.csv")
+# LHS_final<- read.csv("LHS_sampling_results_25reps_26seed.csv")
 # 
-cor(LHS_final$output_meassure, LHS_final[,1:6] ,
-    method = "pearson")
+# cor(LHS_final$output_meassure, LHS_final[,1:6] ,
+#    method = "pearson")
 
 plot_correlation <- function(x, y, xlab, ylab, pch){
   plot(x, y,
@@ -357,33 +478,130 @@ plot_correlation <- function(x, y, xlab, ylab, pch){
        bquote(r==.(round(cor_tes_res$estimate, 2))~", "~p==.(round(cor_tes_res$p.value, 2))))
 }
 
+
+
+
+
+
 #png("correlation_plots.png",   width = 24*0.8, height = 16*0.8, units = "cm",
 #    res = 600)
 
-par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1)
-with(LHS_final,  {
-  plot_correlation(pop_density, output_meassure,
-     ylab=bquote(sigma[S]), xlab = "D" , pch=19)
-  #text(x = 0.02, 0.3, "A", cex=1.5, col="red")
-
-  plot_correlation(world_reachability, output_meassure,
-       ylab=bquote(sigma[S]), xlab = bquote(kappa) , pch=19)
-  #text(x = 0.1, 0.3, "B", cex=1.5, col="red")
-
-  plot_correlation(max_initial_sz, output_meassure,
-       ylab=bquote(sigma[S]), xlab = bquote(s[0]) , pch=19)
-  #text(x = 0.65, 0.3, "C", cex=1.5, col="red")
-
-  plot_correlation(comp_symmetry, output_meassure,
-       ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
-  #text(x = 0.15, 0.3, "D", cex=1.5, col="red")
-
-  plot_correlation(max_growing_size, output_meassure,
-       ylab=bquote(sigma[S]), xlab = bquote(S[max]) , pch=19)
-  #text(x = 0.15, 0.3, "E", cex=1.5, col="red")
-
-  plot_correlation(max_growth_rate, output_meassure,
-       ylab=bquote(sigma[S]), xlab = bquote(M[grt]) , pch=19)
-  #text(x = 0.15, 0.3, "F", cex=1.5, col="red")
-})
+# par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1)
+# with(LHS_final,  {
+#   plot_correlation(pop_density, output_meassure,
+#      ylab=bquote(sigma[S]), xlab = "D" , pch=19)
+#   #text(x = 0.02, 0.3, "A", cex=1.5, col="red")
+# 
+#   plot_correlation(world_reachability, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(kappa) , pch=19)
+#   #text(x = 0.1, 0.3, "B", cex=1.5, col="red")
+# 
+#   plot_correlation(max_initial_sz, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(s[0]) , pch=19)
+#   #text(x = 0.65, 0.3, "C", cex=1.5, col="red")
+# 
+#   plot_correlation(comp_symmetry, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
+#   #text(x = 0.15, 0.3, "D", cex=1.5, col="red")
+# 
+#   plot_correlation(max_growing_size, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(S[max]) , pch=19)
+#   #text(x = 0.15, 0.3, "E", cex=1.5, col="red")
+# 
+#   plot_correlation(max_growth_rate, output_meassure,
+#        ylab=bquote(sigma[S]), xlab = bquote(M[grt]) , pch=19)
+#   #text(x = 0.15, 0.3, "F", cex=1.5, col="red")
+# })
   #dev.off()
+
+
+results_over_time <- cbind(results_over_time,
+                           data.frame(matrix(ncol = length(colnames(LHS_final[1, 1:7])),
+                                            nrow = nrow(results_over_time),
+                                            dimnames = list(NULL, colnames(LHS_final[1, 1:7])))))
+
+results_over_time$coef_var <- results_over_time$size_sd/results_over_time$size_mean
+
+for (re in unique(results_over_time$rep)){
+  results_over_time[results_over_time$rep==re , 6:11] <- LHS_final[re, 1:6]
+}
+
+
+#results_over_time <- read.csv("LHS_sampling_results_over_time_100reps_21seed.csv")
+
+# write.csv(results_over_time, file = paste("LHS_sampling_results_over_time_",
+#                                 n_reps,
+#                                 "reps_", seed_value,"seed", ".csv",
+#                                 sep = ""))
+results_over_time <- read.csv("LHS_sampling_results_over_time_500reps_21seed.csv")
+
+which_use <- 1:11
+
+png("variation_trough_time_examples.png",
+    width = 24, height = 12, units = "cm",
+    res = 300)
+par(mfrow=c(1,2),  mar = c(4,4,2,1),  cex.lab=1.1)
+plot(results_over_time$t,
+     results_over_time$size_sd/results_over_time$size_mean,
+     type="n", xlab="t", ylab="Coefficient of variation")
+for (re in which_use){
+  lines(results_over_time$t[results_over_time$rep==re],
+        results_over_time$size_sd[results_over_time$rep==re]/results_over_time$size_mean[results_over_time$rep==re],
+        col = rainbow(10)[re], lwd=2)
+  }
+
+plot(results_over_time$t, results_over_time$size_skew,
+     type="n", xlab="t", ylab="Skewness")
+for (re in which_use){
+  lines(results_over_time$t[results_over_time$rep==re],
+        results_over_time$size_skew[results_over_time$rep==re],
+        col = rainbow(length(which_use))[re], lwd=2)
+}
+dev.off()
+
+results_over_time <- as.data.frame(scale(results_over_time))
+
+skew_lm <- lm(size_skew ~ as.factor(t)+max_growing_size+comp_symmetry+world_reachability+max_initial_sz+pop_density+max_growth_rate, 
+           data=results_over_time)
+
+summary(skew_lm)
+plot(skew_lm)
+shapiro.test(residuals(skew_lm))
+mean(residuals(skew_lm))
+
+bartlett.test(residuals(skew_lm) ~ as.factor(results_over_time$t),
+              data=results_over_time)
+
+
+coef_var_lm <- lm(coef_var ~ as.factor(t)+max_growing_size+comp_symmetry+world_reachability+max_initial_sz+pop_density+max_growth_rate, 
+              data=results_over_time)
+
+summary(coef_var_lm)
+plot(coef_var_lm)
+
+
+
+
+# 
+# logisticModel <- nls(population ~ 1 / (1 + exp((world_reachability + max_initial_sz) * t)), 
+#                      start=list(world_reachability=1, max_initial_sz=1 ), data=results_over_time) 
+# 
+# 
+# summary(skewness_nls)
+
+
+ 
+ 
+# LHS_final<- read.csv("LHS_sampling_results_over_time_100reps_21seed.csv")
+# 
+# head(results_over_time)
+# 
+# linear_model <- lm(size_sd~ t+world_reachability+max_initial_sz+pop_density+comp_symmetry+max_growing_size+max_growth_rate,
+#                    data=results_over_time)
+# summary(linear_model)
+# 
+# linear_model2 <- lm(size_sd~ t+world_reachability+max_initial_sz+pop_density+max_growing_size-1,
+#                    data=results_over_time)
+# summary(linear_model2)
+# plot(linear_model2)
+# plot(size_sd~ world_reachability, data=as.data.frame(scale(results_over_time)))
