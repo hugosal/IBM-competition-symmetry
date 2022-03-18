@@ -4,7 +4,7 @@
 # 2 variacion inicial en tamanios
 # 3 densisdad de plantas
 # 4 asimetria
-# 5 cosas de especies?
+# 5 tasa de crecimiento
 
 # en este quiero probar las condiciones que dice Weiner1990 sobre el efecto
 # de las interactiones y su simetria en la variacion de 
@@ -197,17 +197,17 @@ generate_initial_points <- function(N, ws){
       coords <- pts[N == rownames(pts), ]
       coords <- coords[coords != ""]
       coords <- do.call(rbind, lapply(coords, function(x) as.numeric(strsplit(x, ":")[[1]])))
-      return(coords)
+      return(coords / 20 * ws) # Scaled to fit ws
     }else{
       stop("Configuration not found yet")}
   }
 }
 
-ws <- 20 # world size 
+ws <- 40 # world size 
 
 timesteps <- 30   # length of each run
 
-n_reps <- 500 # number of LHS samples
+n_reps <- 100 # number of LHS samples
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -223,17 +223,17 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = 3, 
                                                            n_samples = n_reps)),#max initial size,
-                      sample(uniform_LHS_sample_from_range(lower = 4/(ws**2), 
-                                                           upper = 20/(ws**2), 
+                      sample(uniform_LHS_sample_from_range(lower = 8/(ws**2), 
+                                                           upper = 40/(ws**2), 
                                                            n_samples = n_reps)), #pop densiti 4 - 25/ws**2
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 15, 
+                                                           upper = 2, 
                                                            n_samples =n_reps)),# competition asymmetry parameter
                       sample(uniform_LHS_sample_from_range(lower = 1, 
-                                                           upper = 5, 
+                                                           upper = 6, 
                                                            n_samples =n_reps)), # max growing size
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 1, 
+                                                           upper = 0.8, 
                                                            n_samples =n_reps))), # max growth rate
                     nrow = n_reps)
 
@@ -287,14 +287,12 @@ for (rep in 1:nrow(LHS_param)){
   random_angles <- runif(nrow(plantcomm), 
                          min = 0, max = 2*pi)
   
-  plantcomm$x <- plantcomm$x + cos(random_angles)*world_reachablity
-  plantcomm$y <- plantcomm$y + sin(random_angles)*world_reachablity
+  plantcomm$x <- plantcomm$x + cos(random_angles) * world_reachablity %% ws
+  plantcomm$y <- plantcomm$y + sin(random_angles) * world_reachablity %% ws
   
-
-  # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
-  #                main=paste("density", round(pop_density,2),
-  #                           "reachabil", round(world_reachablity,2)))
-
+   # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
+   #                main=paste("density", round(pop_density,2),
+   #                           "reachabil", round(world_reachablity,2)))
     a <- ( 4 * max_grwth_rt)/max_S
     b <- ( 4 * max_grwth_rt)/(max_S**2)
 
@@ -441,8 +439,6 @@ for (rep in 1:nrow(LHS_param)){
   	counter <- counter + 1
 
   }
-  #output_meassure[rep] <- sd(plantcomm$sz)/mean(plantcomm$sz)
-  
 }
 
 
@@ -454,65 +450,6 @@ for (rep in 1:nrow(LHS_param)){
    }
    fi
  })
- #LHS_final$output_meassure <- output_meassure
-
- # 
-# 
-# write.csv(LHS_final, file = paste("LHS_sampling_results_",
-#                                 n_reps,
-#                                 "reps_", seed_value,"seed", ".csv",
-#                                 sep = ""))
-# LHS_final<- read.csv("LHS_sampling_results_25reps_26seed.csv")
-# 
-# cor(LHS_final$output_meassure, LHS_final[,1:6] ,
-#    method = "pearson")
-
-plot_correlation <- function(x, y, xlab, ylab, pch){
-  plot(x, y,
-       ylab=ylab, xlab = xlab, type = "n")
-  grid()
-  abline(lm(y ~ x), col = "red", lwd = 2)
-  points(x, y, pch=pch)
-  cor_tes_res <- cor.test(x, y, method="pearson")
-  text(x=min(x)+diff(range(x))/2, y=max(y)*0.9, cex=1.2,
-       bquote(r==.(round(cor_tes_res$estimate, 2))~", "~p==.(round(cor_tes_res$p.value, 2))))
-}
-
-
-
-
-
-
-#png("correlation_plots.png",   width = 24*0.8, height = 16*0.8, units = "cm",
-#    res = 600)
-
-# par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1)
-# with(LHS_final,  {
-#   plot_correlation(pop_density, output_meassure,
-#      ylab=bquote(sigma[S]), xlab = "D" , pch=19)
-#   #text(x = 0.02, 0.3, "A", cex=1.5, col="red")
-# 
-#   plot_correlation(world_reachability, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(kappa) , pch=19)
-#   #text(x = 0.1, 0.3, "B", cex=1.5, col="red")
-# 
-#   plot_correlation(max_initial_sz, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(s[0]) , pch=19)
-#   #text(x = 0.65, 0.3, "C", cex=1.5, col="red")
-# 
-#   plot_correlation(comp_symmetry, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(theta) , pch=19)
-#   #text(x = 0.15, 0.3, "D", cex=1.5, col="red")
-# 
-#   plot_correlation(max_growing_size, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(S[max]) , pch=19)
-#   #text(x = 0.15, 0.3, "E", cex=1.5, col="red")
-# 
-#   plot_correlation(max_growth_rate, output_meassure,
-#        ylab=bquote(sigma[S]), xlab = bquote(M[grt]) , pch=19)
-#   #text(x = 0.15, 0.3, "F", cex=1.5, col="red")
-# })
-  #dev.off()
 
 
 results_over_time <- cbind(results_over_time,
@@ -526,82 +463,7 @@ for (re in unique(results_over_time$rep)){
   results_over_time[results_over_time$rep==re , 6:11] <- LHS_final[re, 1:6]
 }
 
-
-#results_over_time <- read.csv("LHS_sampling_results_over_time_100reps_21seed.csv")
-
-# write.csv(results_over_time, file = paste("LHS_sampling_results_over_time_",
-#                                 n_reps,
-#                                 "reps_", seed_value,"seed", ".csv",
-#                                 sep = ""))
-results_over_time <- read.csv("LHS_sampling_results_over_time_500reps_21seed.csv")
-
-which_use <- 1:11
-
-png("variation_trough_time_examples.png",
-    width = 24, height = 12, units = "cm",
-    res = 300)
-par(mfrow=c(1,2),  mar = c(4,4,2,1),  cex.lab=1.1)
-plot(results_over_time$t,
-     results_over_time$size_sd/results_over_time$size_mean,
-     type="n", xlab="t", ylab="Coefficient of variation")
-for (re in which_use){
-  lines(results_over_time$t[results_over_time$rep==re],
-        results_over_time$size_sd[results_over_time$rep==re]/results_over_time$size_mean[results_over_time$rep==re],
-        col = rainbow(10)[re], lwd=2)
-  }
-
-plot(results_over_time$t, results_over_time$size_skew,
-     type="n", xlab="t", ylab="Skewness")
-for (re in which_use){
-  lines(results_over_time$t[results_over_time$rep==re],
-        results_over_time$size_skew[results_over_time$rep==re],
-        col = rainbow(length(which_use))[re], lwd=2)
-}
-dev.off()
-
-results_over_time <- as.data.frame(scale(results_over_time))
-
-skew_lm <- lm(size_skew ~ as.factor(t)+max_growing_size+comp_symmetry+world_reachability+max_initial_sz+pop_density+max_growth_rate, 
-           data=results_over_time)
-
-summary(skew_lm)
-plot(skew_lm)
-shapiro.test(residuals(skew_lm))
-mean(residuals(skew_lm))
-
-bartlett.test(residuals(skew_lm) ~ as.factor(results_over_time$t),
-              data=results_over_time)
-
-
-coef_var_lm <- lm(coef_var ~ as.factor(t)+max_growing_size+comp_symmetry+world_reachability+max_initial_sz+pop_density+max_growth_rate, 
-              data=results_over_time)
-
-summary(coef_var_lm)
-plot(coef_var_lm)
-
-
-
-
-# 
-# logisticModel <- nls(population ~ 1 / (1 + exp((world_reachability + max_initial_sz) * t)), 
-#                      start=list(world_reachability=1, max_initial_sz=1 ), data=results_over_time) 
-# 
-# 
-# summary(skewness_nls)
-
-
- 
- 
-# LHS_final<- read.csv("LHS_sampling_results_over_time_100reps_21seed.csv")
-# 
-# head(results_over_time)
-# 
-# linear_model <- lm(size_sd~ t+world_reachability+max_initial_sz+pop_density+comp_symmetry+max_growing_size+max_growth_rate,
-#                    data=results_over_time)
-# summary(linear_model)
-# 
-# linear_model2 <- lm(size_sd~ t+world_reachability+max_initial_sz+pop_density+max_growing_size-1,
-#                    data=results_over_time)
-# summary(linear_model2)
-# plot(linear_model2)
-# plot(size_sd~ world_reachability, data=as.data.frame(scale(results_over_time)))
+write.csv(results_over_time, file = paste("LHS_sampling_results_over_time_",
+                                n_reps, "_ws_", ws, 
+                                "reps_", seed_value,"seed", ".csv",
+                                sep = ""))
