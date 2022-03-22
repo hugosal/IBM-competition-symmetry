@@ -35,7 +35,7 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
                                                     x[2]/255,
                                                     x[3]/255,
                                                     alpha = 0.5)  )
-  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
+  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="x", ylab="y",
        yaxt="n", xaxt="n", yaxs="i", xaxs="i", 
        xlim = c(0,ws),
        ylim = c(0,ws))
@@ -154,7 +154,7 @@ generate_initial_points <- function(N, ws){
     grid_poinst <- seq(from = 0, to = ws, 
                        by = ws/(n_per_row))[1:n_per_row]
     x <- rep(grid_poinst, n_per_row)
-    y <- as.vector(sapply(grid_poinst, function(x)rep(x, n_per_row)))
+    y <- as.vector(sapply(grid_poinst, function(x) rep(x, n_per_row)))
     return(cbind(x, y))
   }else if(sqrt(N/2) == round(sqrt(N/2))){
     i <- sqrt(N/2)
@@ -188,17 +188,17 @@ generate_initial_points <- function(N, ws){
   }
 }
 
+ws <- 20 # world size 
 
-ws <- 40 # world size 
+timesteps <- 20   # length of each run
 
-timesteps <- 30   # length of each run
-
-world_reachablity <- 3
-max_initial_size <- 3
-pop_density <- 30/(ws**2)
+world_reachablity <- 0
+max_initial_size <- 0.5
+pop_density <- 20/(ws**2)
 theta <- 5
 max_S <- 5
 max_grwth_rt <- 0.5
+indiviudal_var_growth_rate <- 0.1
 
 initial.n <- round(ws**2 * pop_density)
 config_found <- c(4,5,8,9,10,13,15,16,17,18,20,24,25,26,29,32,34,35,36,37,40)
@@ -223,16 +223,22 @@ plantcomm = data.frame(
 random_angles <- runif(nrow(plantcomm), 
                        min = 0, max = 2*pi)
 
-plantcomm$x <- plantcomm$x + cos(random_angles)*world_reachablity
-plantcomm$y <- plantcomm$y + sin(random_angles)*world_reachablity
-
+plantcomm$x <- (plantcomm$x + cos(random_angles) * world_reachablity) %% ws
+plantcomm$y <- (plantcomm$y + sin(random_angles) * world_reachablity) %% ws
 
 # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
 #                main=paste("density", round(pop_density,2),
 #                           "reachabil", round(world_reachablity,2)))
 
-a <- ( 4 * max_grwth_rt)/max_S
-b <- ( 4 * max_grwth_rt)/(max_S**2)
+ind_s_var <- runif(min = 1, 
+                   max = 1 + indiviudal_var_growth_rate,
+                   n = nrow(plantcomm))
+ind_grwth_rt <- runif(min = 1,
+                      max = 1 + indiviudal_var_growth_rate, 
+                      n = nrow(plantcomm))
+
+a <- (4 * (max_grwth_rt * ind_grwth_rt))/(max_S * ind_s_var)
+b <- (4 * (max_grwth_rt * ind_grwth_rt))/((max_S * ind_s_var)**2)
 
 
 saveGIF({
@@ -269,7 +275,7 @@ saveGIF({
     disteffect <- dists < radius_sum
     n_in_groups <- apply(disteffect, MARGIN = 1, FUN = sum)
     
-    # this optimization trick is to coimpute first intersections
+    # this optimization trick is to compute first intersections
     # with most circles, then subsets of those groups will be extracted
     # from memory instead of computed again
     most_to_least_crowded <- order(n_in_groups, decreasing = T)
@@ -280,7 +286,7 @@ saveGIF({
     # intersections areas. Otherwise, it will stay the same size, computing areas
     # will be irrelevant and thus it is omitted
     
-    cant_grow_more <- which(plantcomm$sz >= max_S)
+    cant_grow_more <- which(plantcomm$sz >= (max_S * ind_s_var))
     
     # initiate vector of resources obtained with the area of effect of each plant
     resources_obtained_p_ind <- plantcomm$sz**2 * pi
@@ -290,7 +296,7 @@ saveGIF({
     for(j in intersect_to_compute){
       
       if (j %in% cant_grow_more){
-        if((a * plantcomm$sz[j]) - (b * plantcomm$sz[j]**2) > 1e-6){
+        if((a[j] * plantcomm$sz[j]) - (b[j] * plantcomm$sz[j]**2) > 1e-6){
           stop("Algo mal con optimizacion de crecimiento")
         }
         next
@@ -329,10 +335,6 @@ saveGIF({
         
         plantcomm_sub[, c(1,2)] <- center_world_arround(coords = plantcomm_sub[, c(1,2)],
                                                         center_xy = j, ws = ws)
-        
-        if (length(names_original_plantcomm) > 9){
-          print(paste(length(names_original_plantcomm),", grt progress ", plantcomm$sz[j]/max_S))
-        }
         
         intersections <- unlist(Librino_N(centers_x = plantcomm_sub$x,
                                           centers_y = plantcomm_sub$y,

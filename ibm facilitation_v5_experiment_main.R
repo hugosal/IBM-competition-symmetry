@@ -169,7 +169,7 @@ generate_initial_points <- function(N, ws){
     grid_poinst <- seq(from = 0, to = ws, 
                        by = ws/(n_per_row))[1:n_per_row]
     x <- rep(grid_poinst, n_per_row)
-    y <- as.vector(sapply(grid_poinst, function(x)rep(x, n_per_row)))
+    y <- as.vector(sapply(grid_poinst, function(x) rep(x, n_per_row)))
     return(cbind(x, y))
   }else if(sqrt(N/2) == round(sqrt(N/2))){
     i <- sqrt(N/2)
@@ -203,11 +203,11 @@ generate_initial_points <- function(N, ws){
   }
 }
 
-ws <- 40 # world size 
+ws <- 20 # world size 
 
 timesteps <- 30   # length of each run
 
-n_reps <- 100 # number of LHS samples
+n_reps <- 500 # number of LHS samples
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -218,23 +218,27 @@ uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
 
 # cada fila va a ser una fila de parametros a usar
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 3, 
+                                                           upper = 5, 
                                                            n_samples = n_reps)), #wrl reach, 0 - 1
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = 3, 
                                                            n_samples = n_reps)),#max initial size,
                       sample(uniform_LHS_sample_from_range(lower = 8/(ws**2), 
-                                                           upper = 40/(ws**2), 
+                                                           upper = 30/(ws**2), 
                                                            n_samples = n_reps)), #pop densiti 4 - 25/ws**2
                       sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 2, 
-                                                           n_samples =n_reps)),# competition asymmetry parameter
+                                                           n_samples = n_reps)),# competition asymmetry parameter
                       sample(uniform_LHS_sample_from_range(lower = 1, 
-                                                           upper = 6, 
-                                                           n_samples =n_reps)), # max growing size
+                                                           upper = 4, 
+                                                           n_samples = n_reps)), # max growing size
                       sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 0.8, 
-                                                           n_samples =n_reps))), # max growth rate
+                                                           upper = 0.5, 
+                                                           n_samples = n_reps)), # max growth rate
+                      sample(uniform_LHS_sample_from_range(lower = 0, 
+                                                           upper = 0.5, 
+                                                           n_samples = n_reps))),# individual variation in growth rate
+                                                                                 # 
                     nrow = n_reps)
 
 colnames(LHS_param) <- c("world_reachability", 
@@ -242,26 +246,29 @@ colnames(LHS_param) <- c("world_reachability",
                          "pop_density",
                          "comp_symmetry", 
                          "max_growing_size",
-                         "max_growth_rate")
+                         "max_growth_rate",
+                         "indiviudal_var_growth_rate")
 
-output_meassure <- numeric(n_reps)
 
-results_over_time <- data.frame(rep = numeric(n_reps * timesteps),
-                      t = numeric(n_reps * timesteps),
-                      size_mean = numeric(n_reps * timesteps),
-                      size_sd = numeric(n_reps * timesteps), 
-                      size_skew = numeric(n_reps * timesteps))
+results_over_time <- data.frame(re = numeric(n_reps * (timesteps + 1)),
+                      t = numeric(n_reps * (timesteps + 1)),
+                      size_mean = numeric(n_reps * (timesteps + 1)),
+                      size_sd = numeric(n_reps * (timesteps + 1)), 
+                      size_skew = numeric(n_reps * (timesteps + 1)))
 counter <- 1
-for (rep in 1:nrow(LHS_param)){
-  print(paste( "rep ", rep))
+for (re in 1:nrow(LHS_param)){
+  print(paste( "re ", re))
   
   # extract value of model parameters
-  world_reachablity <- LHS_param[rep, 1]
-  max_initial_size <- LHS_param[rep, 2]
-  pop_density <- LHS_param[rep, 3]
-  theta <- LHS_param[rep, 4]
-  max_S <- LHS_param[rep, 5]
-  max_grwth_rt <- LHS_param[rep, 6]
+  world_reachablity <- LHS_param[re, 1]
+  max_initial_size <- LHS_param[re, 2]
+  pop_density <- LHS_param[re, 3]
+  theta <- LHS_param[re, 4]
+  max_S <- LHS_param[re, 5]
+  max_grwth_rt <- LHS_param[re, 6]
+  indiviudal_var_growth_rate <- LHS_param[re, 7]
+  
+  
   
   # set population size
   initial.n <- round(ws**2 * pop_density)
@@ -287,18 +294,30 @@ for (rep in 1:nrow(LHS_param)){
   random_angles <- runif(nrow(plantcomm), 
                          min = 0, max = 2*pi)
   
-  plantcomm$x <- plantcomm$x + cos(random_angles) * world_reachablity %% ws
-  plantcomm$y <- plantcomm$y + sin(random_angles) * world_reachablity %% ws
+  plantcomm$x <- (plantcomm$x + cos(random_angles) * world_reachablity) %% ws
+  plantcomm$y <- (plantcomm$y + sin(random_angles) * world_reachablity) %% ws
   
    # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
    #                main=paste("density", round(pop_density,2),
    #                           "reachabil", round(world_reachablity,2)))
-    a <- ( 4 * max_grwth_rt)/max_S
-    b <- ( 4 * max_grwth_rt)/(max_S**2)
-
     
-  # meassure of overall variation will be the sum of variation coeficient
+    ind_s_var <- runif(min = 1, 
+                       max = 1 + indiviudal_var_growth_rate,
+                       n = nrow(plantcomm))
+    ind_grwth_rt <- runif(min = 1,
+                          max = 1 + indiviudal_var_growth_rate, 
+                          n = nrow(plantcomm))
+    
+    a <- (4 * (max_grwth_rt * ind_grwth_rt))/(max_S * ind_s_var)
+    b <- (4 * (max_grwth_rt * ind_grwth_rt))/((max_S * ind_s_var)**2)
 
+  # record data at time 0: before plants start interacting
+    results_over_time[counter, ] <- c(re, 0, 
+                                      mean(plantcomm$sz), 
+                                      sd(plantcomm$sz), 
+                                      e1071::skewness(plantcomm$sz))
+    counter <- counter + 1
+  
   for (t in 1:timesteps){
     #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
 
@@ -329,7 +348,7 @@ for (rep in 1:nrow(LHS_param)){
   	# intersections areas. Otherwise, it will stay the same size, computing areas
   	# will be irrelevant and thus it is omitted
   	
-  	cant_grow_more <- which(plantcomm$sz >= max_S)
+  	cant_grow_more <- which(plantcomm$sz >= (max_S * ind_s_var))
   		
   	# initiate vector of resources obtained with the area of effect of each plant
   	resources_obtained_p_ind <- plantcomm$sz**2 * pi
@@ -339,7 +358,7 @@ for (rep in 1:nrow(LHS_param)){
   	for(j in intersect_to_compute){
   	  
   	  if (j %in% cant_grow_more){
-  	    if((a * plantcomm$sz[j]) - (b * plantcomm$sz[j]**2) > 1e-6){
+  	    if((a[j] * plantcomm$sz[j]) - (b[j] * plantcomm$sz[j]**2) > 1e-6){
   	      stop("Algo mal con optimizacion de crecimiento")
   	    }
   	    next
@@ -379,10 +398,6 @@ for (rep in 1:nrow(LHS_param)){
     	  plantcomm_sub[, c(1,2)] <- center_world_arround(coords = plantcomm_sub[, c(1,2)],
     	                                                  center_xy = j, ws = ws)
 
-    	  if (length(names_original_plantcomm) > 9){
-    	    print(paste(length(names_original_plantcomm),", grt progress ", plantcomm$sz[j]/max_S))
-    	    }
-  
     	  intersections <- unlist(Librino_N(centers_x = plantcomm_sub$x,
     	                                    centers_y = plantcomm_sub$y,
     	                                    radii = plantcomm_sub$sz), use.names = T)
@@ -432,7 +447,7 @@ for (rep in 1:nrow(LHS_param)){
 
   	plantcomm$sz = plantcomm$sz + indgr
 
-  	results_over_time[counter, ] <- c(rep, t, 
+  	results_over_time[counter, ] <- c(re, t, 
   	                                  mean(plantcomm$sz), 
   	                                  sd(plantcomm$sz), 
   	                                  e1071::skewness(plantcomm$sz))
@@ -441,16 +456,7 @@ for (rep in 1:nrow(LHS_param)){
   }
 }
 
-
- LHS_final <- as.data.frame(LHS_param)
- LHS_final$pop_size <- sapply(round(LHS_final$pop_density*ws**2), function(x){
-   fi <- x
-   if (! x %in% config_found){
-     fi <- config_found[which.min(abs(x - config_found))]
-   }
-   fi
- })
-
+LHS_final <- as.data.frame(LHS_param)
 
 results_over_time <- cbind(results_over_time,
                            data.frame(matrix(ncol = length(colnames(LHS_final[1, 1:7])),
@@ -459,11 +465,11 @@ results_over_time <- cbind(results_over_time,
 
 results_over_time$coef_var <- results_over_time$size_sd/results_over_time$size_mean
 
-for (re in unique(results_over_time$rep)){
-  results_over_time[results_over_time$rep==re , 6:11] <- LHS_final[re, 1:6]
+for (case in unique(results_over_time$re)){
+  results_over_time[results_over_time$re==case , 6:12] <- LHS_final[case, 1:7]
 }
 
 write.csv(results_over_time, file = paste("LHS_sampling_results_over_time_",
-                                n_reps, "_ws_", ws, 
-                                "reps_", seed_value,"seed", ".csv",
+                                n_reps, "res_", ws, "ws_",
+                                 seed_value,"seed", ".csv",
                                 sep = ""))
