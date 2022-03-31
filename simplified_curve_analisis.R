@@ -251,7 +251,7 @@ summary(coef_var_tree_discrete)
  fr <- which(curves_description$type=="inc_convex")
 
 
-subset <- curves_description[1:nrow(curves_description) %in% fr, ]
+subset <- curves_description[1:nrow(curves_description) %in% fr ,]
 
 bayesian_posterior_parameter <- function(values, total_values, 
                                          ranges_init = NULL, prior = NULL, 
@@ -279,7 +279,7 @@ bayesian_posterior_parameter <- function(values, total_values,
 
   
  prior <- sapply(1:(n_categ-1), function(x){ sum(total_values >= ranges_init[x] & total_values < ranges_init[x+1])  } )
- pri[orn_categ] <- sum(total_values >=  ranges_init[n_categ] )
+ prior[n_categ] <- sum(total_values >=  ranges_init[n_categ] )
  prior <- prior/N
 
 
@@ -292,9 +292,10 @@ list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
      param_vals = ranges_init)
 }
 
-prob <- bayesian_posterior_parameter(values = subset$overcrowding, 
-                             total_values =  curves_description$overcrowding, 
+prob <- bayesian_posterior_parameter(values = subset$comp_symmetry, 
+                             total_values =  curves_description$comp_symmetry, 
                              n_categ = 12 )
 
-barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3), names.arg = prob$param_vals)
+barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3), 
+        names.arg = round(prob$param_vals,2))
 barplot(prob$prior, add = T, col = rgb(0, 1 , 0, alpha = 0.3))
