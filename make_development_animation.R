@@ -4,6 +4,14 @@ source("circles_area_of_overlap.R")
 seed_value <-21
 library(animation)
 set.seed(seed_value)
+
+seed_value <-21
+set.seed(seed_value)
+
+#esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
+# de tarl manera que center_x y center_y esten en el centro del mundo
+# y asi el wrapping no afecte el calculo de areas, y regresa todas con la nueva
+# escala, con el centro como primer elemento
 center_world_arround <- function(center_xy, ws, coords){
   row_number <- which(rownames(coords)==as.character(center_xy))
   x_offset <- (ws/2) - coords$x[row_number]
@@ -35,13 +43,141 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
                                                     x[2]/255,
                                                     x[3]/255,
                                                     alpha = 0.5)  )
-  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="x", ylab="y",
+  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
        yaxt="n", xaxt="n", yaxs="i", xaxs="i", 
        xlim = c(0,ws),
-       ylim = c(0,ws))
+       ylim = c(0,ws), asp=1)
   
   
   
+  for (j in 1:nrow(com)){
+    
+    if (circle){
+      at_border <- c(com[j, 1] + com[j, 4] > ws | com[j, 1] - com[j, 4] < 0,
+                     com[j, 2] + com[j, 4] > ws | com[j, 2] - com[j, 4] < 0)
+    }else{
+      at_border <- c(abs(com[j, 1]- ws) < 1e-4 | com[j, 1] < 1e-4,
+                     abs(com[j, 2]- ws) < 1e-4 | com[j, 2] < 1e-4)
+      
+    }
+    
+    
+    
+    if (any(at_border)){
+      for(k in list(c(0,0),
+                    c(ws,0),
+                    c(-ws,0),
+                    c(0,ws),
+                    c(0,-ws),
+                    c(ws,ws),
+                    c(-ws,ws)
+      )){
+        if (circle){
+          plotrix::draw.circle(x = com$x[j]+k[1], y = com$y[j]+k[2], radius = com$sz[j], 
+                               col = colores[com$ft[j]])
+        }else{
+          points(x = com$x[j]+k[1], y = com$y[j]+k[2], col=com$ft, pch=19)
+        }
+        
+      }}
+    else{
+      if(circle){
+        plotrix::draw.circle(x = com$x[j], y = com$y[j], radius = com$sz[j], 
+                             col = colores[com$ft[j]])
+      }else{
+        points(com$x, com$y, col=com$ft, pch=19)
+      }
+    }
+    offst <- ws*0.97
+    letter_sz <- 0.9
+    
+    
+    if (numbers){
+      
+      if (sum(at_border) == 0){
+        if (circle){
+          text_box(x = com$x[j], y = com$y[j], labels = j, cex=letter_sz)
+        }else{
+          text_box(x = com$x[j]+(ws-offst), y = com$y[j]+(ws-offst), 
+                   labels = j, cex=letter_sz)
+        }
+        
+      }else if (sum(at_border)==2){
+        if (circle){text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+        }else{
+          text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+          
+        }
+        
+      }else if (at_border[2]){
+        if (circle){
+          text_box(x = com$x[j], ws-offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j], offst, labels = j, cex=letter_sz)
+        }else{
+          text_box(x = com$x[j]+ws-offst, ws-offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j]+ws-offst, offst, labels = j, cex=letter_sz)
+        }
+        
+        
+      }else if (at_border[1]){
+        
+        if (circle){
+          text_box(x = ws-offst , y = com$y[j], labels = j, cex=letter_sz)
+          text_box(x = offst , y = com$y[j], labels = j, cex=letter_sz)
+          
+        }else{
+          text_box(x = ws-offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          text_box(x = offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          
+        }
+        
+      }
+    }}
+  
+  if (! is.null(ws)){
+    polygon(c(-1, ws+5, ws+5,-1), c(0,0,-10,-10), col="white", border=NA)
+    
+    polygon(c(0, 0, -10,-10), c(0,ws+5,-2,-2), col="white" , border=NA)
+    
+    polygon(c(ws, ws, ws+5,ws+5), c(-6,ws+5,ws+5,-6), col="white", border=NA)
+    
+    polygon(c(-6, ws+5, ws+5,-1), c(ws,ws,ws+5,ws+5), col="white", border=NA)
+    
+    lines(x = c(0, ws), y = c(0, 0)  )
+    lines(x = c(0, 0), y = c(ws, 0)  )
+    lines(x = c(ws, 0), y = c(ws, ws)  )
+    lines(x = c(ws, ws), y = c(ws, 0)  )
+  }
+}
+
+plot_plantcomm_deads <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE){
+  
+  text_box <- function(x, y, labels, cex){
+    sw   <- strwidth(labels)
+    sh   <- strheight(labels)
+    frsz <- 0
+    
+    if (strwidth(labels)>strwidth("1")){
+      text(x, y, labels, font=2, col="white", cex=cex)
+      text(x, y, labels, cex=cex*0.98, font=1)
+    }else{
+      text(x, y, labels, font=2, col="white", cex=cex)
+      text(x, y, labels, cex=cex*0.98, font=1) # con  el problema del que no se veia bien
+      # aca cambia el 0.98
+    }
+  }
+  
+  colores <- col2rgb("gray")
+  colores <- apply(colores, 2, FUN = function(x)rgb(x[1]/255,
+                                                    x[2]/255,
+                                                    x[3]/255,
+                                                    alpha = 0.5)  )
   for (j in 1:nrow(com)){
     
     if (circle){
@@ -188,26 +324,39 @@ generate_initial_points <- function(N, ws){
   }
 }
 
+
 ws <- 20 # world size 
 
-timesteps <- 20   # length of each run
+timesteps <- 30   # length of each run
 
-world_reachablity <- 0
-max_initial_size <- 0.5
-pop_density <- 20/(ws**2)
-theta <- 5
-max_S <- 5
-max_grwth_rt <- 0.5
-indiviudal_var_growth_rate <- 0.1
+slf_thinning_limit <- 0.2 # if competition effect is stronger or equal to this
+#                           plants will die
 
-initial.n <- round(ws**2 * pop_density)
+
+# The  number of plants of a population that would have just enough resources is
+intermediate_pop <- 16
+
+# The maximum size of plants such that they have just enough resources is
+max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
+
+world_reachablity <- 10
+max_initial_size <- 0.8
+n_overcrowding_plants <- 10
+theta <- 10
+max_grwth_rt <- 0.2
+indiviudal_var_growth_rate <- 0
+
+initial.n <- intermediate_pop + n_overcrowding_plants
 config_found <- c(4,5,8,9,10,13,15,16,17,18,20,24,25,26,29,32,34,35,36,37,40)
 
 if (! initial.n %in% config_found){
   print("adj")
   initial.n <- config_found[which.min(abs(initial.n - config_found))]
 }
-print(initial.n)
+print(unname(initial.n))
+
+# set plants initial coordinates
+coordinates <- generate_initial_points(N = initial.n, ws = ws)
 
 # set plants initial coordinates
 coordinates <- generate_initial_points(N = initial.n, ws = ws)
@@ -218,6 +367,10 @@ plantcomm = data.frame(
   ft = 1,
   sz = runif(initial.n, min = 0.5, max = max_initial_size))
 
+dead_plants <- data.frame(x = numeric(),
+                          y = numeric(),
+                          ft = numeric(),
+                          sz = numeric())
 # modify plant coordinates accoding to spatial disarrangement parameter
 
 random_angles <- runif(nrow(plantcomm), 
@@ -245,19 +398,22 @@ saveGIF({
   for (t in 1:timesteps){
     par(mfrow=c(1,2))
     plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
+    if (nrow(dead_plants)>0){
+    plot_plantcomm_deads(dead_plants, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
+    }  
+    sign_ovrcrwd <- if (n_overcrowding_plants > 0) "+" else if(n_overcrowding_plants < 0) "-" else " "
     
-    mtext(text = bquote("D"==over(.(round(pop_density*ws**2)) , .(ws)^2) ~","~ 
-                        kappa==.(round(world_reachablity),2)~","~
+    mtext(text = bquote("Overcrowding "== ~ .(paste(sign_ovrcrwd, abs(n_overcrowding_plants), sep="")) ~","~ 
+                        kappa==.(round(world_reachablity, 2))~","~
                         s[0]==.(round(max_initial_size, 2))~","),
           side = 1, line = 2)
-    mtext(text = bquote(theta==.(round(theta),2)~","~
-                        S[max]==.(round(max_S),2)~","~
+    mtext(text = bquote(theta==.(round(theta, 2))~","~
+                        S[max]==.(round(max_S, 3))~","~
                         M[grt]==.(round(max_grwth_rt,2))),
           side = 1, line = 4)
     hist(plantcomm$sz, xlab="Plant size", freq = T, main="",
-         ylim = c(0, initial.n ),  
-         breaks = seq(from =0, to = max_S, length.out = 10  ))
-    
+         ylim = c(0, initial.n ), 
+         breaks = seq(from =0, to = max_S * 1.2, length.out = 10  ))
     
     print(paste( "t ", t))
     
@@ -286,7 +442,7 @@ saveGIF({
     # intersections areas. Otherwise, it will stay the same size, computing areas
     # will be irrelevant and thus it is omitted
     
-    cant_grow_more <- which(plantcomm$sz >= (max_S * ind_s_var))
+    #cant_grow_more <- which(plantcomm$sz >= (max_S * ind_s_var))
     
     # initiate vector of resources obtained with the area of effect of each plant
     resources_obtained_p_ind <- plantcomm$sz**2 * pi
@@ -295,12 +451,12 @@ saveGIF({
     
     for(j in intersect_to_compute){
       
-      if (j %in% cant_grow_more){
-        if((a[j] * plantcomm$sz[j]) - (b[j] * plantcomm$sz[j]**2) > 1e-6){
-          stop("Algo mal con optimizacion de crecimiento")
-        }
-        next
-      }
+      # if (j %in% cant_grow_more){
+      #   if((a[j] * plantcomm$sz[j]) - (b[j] * plantcomm$sz[j]**2) > 1e-6){
+      #     stop("Algo mal con optimizacion de crecimiento")
+      #   }
+      #   next
+      # }
       names_original_plantcomm <- which(disteffect[j, ])
       
       previously_seen <- unlist(lapply(seq_along(intersections_list_memory),
@@ -384,6 +540,24 @@ saveGIF({
     indgr[indgr < 0] <- 0
     
     plantcomm$sz = plantcomm$sz + indgr
+    
+    ################### Mortality by self thinning. Plants will die if the
+    # effect of competition is stronger than a thresholf
+    
+    dead_by_self_thinning <- competition_effect <= slf_thinning_limit
+    
+    if (any(dead_by_self_thinning)) {
+      
+      dead_plants <- rbind(dead_plants, plantcomm[dead_by_self_thinning, ])
+      plantcomm <- plantcomm[!dead_by_self_thinning, ]
+      rownames(plantcomm) = 1:nrow(plantcomm)
+      a <- a[!dead_by_self_thinning]
+      b <- b[!dead_by_self_thinning]
+      
+      
+      
+    }
+    
     
   }
   
