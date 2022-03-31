@@ -12,7 +12,7 @@
 source("circles_area_of_overlap.R")
 #source("get_ppis.R")
 
-seed_value <-21
+seed_value <-26
 set.seed(seed_value)
 
 #esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
@@ -214,21 +214,21 @@ ws <- 20 # world size
 
 timesteps <- 30   # length of each run
 
-slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
+# slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 800 # number of LHS samples
+n_reps <- 1000 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
 intermediate_pop <- 16
 
 # The maximum size of plants such that they have just enough resources is
-max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
+max_S <- ws/(sqrt(intermediate_pop) * 2)  # Â¡Â¡Â¡Â¡Â¡Â¡Â¡Â¡Â¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
 # cada fila va a ser una fila de parametros a usar
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 5, 
+                                                           upper = 10, 
                                                            n_samples = n_reps)), # wrl reach, 0 - 1
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = max_S/2, 
@@ -451,16 +451,14 @@ for (re in 1:nrow(LHS_param)){
   	################### Mortality by self thinning. Plants will die if the
   	# effect of competition is stronger than a thresholf
   	
-  	dead_by_self_thinning <- competition_effect <= slf_thinning_limit
+  	#dead_by_self_thinning <- competition_effect <= slf_thinning_limit
   	
-  	if (any(dead_by_self_thinning)) {
-  	  print("overcrowding dead")
-    	  plantcomm <- plantcomm[!dead_by_self_thinning, ]
-    	  rownames(plantcomm) = 1:nrow(plantcomm)
-    	  a <- a[!dead_by_self_thinning]
-    	  b <- b[!dead_by_self_thinning]
-    	  
-  	  }
+  	#if (any(dead_by_self_thinning)) {
+  	#  print("overcrowding dead")
+   # 	  plantcomm <- plantcomm[!dead_by_self_thinning, ]
+   # 	  rownames(plantcomm) = 1:nrow(plantcomm)
+   # 	  a <- a[!dead_by_self_thinning]
+   # 	  b <- b[!dead_by_self_thinning]}
 
   
   	
@@ -490,5 +488,5 @@ for (case in unique(results_over_time$re)){
 
 write.csv(results_over_time, file = paste("LHS_sampling_results_over_time_",
                                 n_reps, "res_", ws, "ws_",
-                                 seed_value,"seed_", slf_thinning_limit,"thinn", ".csv",
+                                 seed_value,"_seed.csv",
                                 sep = ""))

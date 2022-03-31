@@ -1,5 +1,5 @@
 library(animation)
-results_over_time <- read.csv("LHS_sampling_results_over_time_800res_20ws_21seed_0.1thinn.csv", 
+results_over_time <- read.csv("LHS_sampling_results_over_time_1000res_20ws_26_seed.csv", 
                               stringsAsFactors = F)
 
 
@@ -42,9 +42,9 @@ clasfify_Curve <- function(cvar, t){
   }
   inflpts <- if (length(inflpts)>0) inflpts[seq(from= 1, to=length(inflpts), by=2)]
 
-   # for (i in inflpts){
-   #   type_curve <- paste(type_curve, if (i) "_convex" else "_concave", 
-   #                       sep="")}
+   for (i in inflpts){
+     type_curve <- paste(type_curve, if (i) "_convex" else "_concave",
+                         sep="")}
   type_curve
 }
 
@@ -242,5 +242,59 @@ summary(coef_var_tree_discrete)
   # xpd = TRUE makes the legend plot to the figure
 }
 
+ 
+
+ 
+ table(curves_description$type)
+ barplot(table(curves_description$type))
+ 
+ fr <- which(curves_description$type=="inc_convex")
 
 
+subset <- curves_description[1:nrow(curves_description) %in% fr, ]
+
+bayesian_posterior_parameter <- function(values, total_values, 
+                                         ranges_init = NULL, prior = NULL, 
+                                         n_categ = 10){
+  N <- length(total_values)
+  
+  if(is.factor(values)){
+    
+    ranges_init <- sort(as.numeric(levels(values)))
+    prior <- sapply(seq_along(ranges_init), function(x){ sum(total_values == ranges_init[x])} )
+    prior <- prior/N
+    
+    
+    likelyhood <- sapply(seq_along(ranges_init), function(x){ sum(values == ranges_init[x])  } )
+    likelyhood <- likelyhood/length(values)
+    
+    return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
+         prior = prior,
+         param_vals = ranges_init))
+  }
+  
+  if (is.null(ranges_init)){
+    ranges_init <- seq(from = min(total_values), to = max(total_values), length.out = n_categ)
+  }
+
+  
+ prior <- sapply(1:(n_categ-1), function(x){ sum(total_values >= ranges_init[x] & total_values < ranges_init[x+1])  } )
+ pri[orn_categ] <- sum(total_values >=  ranges_init[n_categ] )
+ prior <- prior/N
+
+
+ likelyhood <- sapply(1:(n_categ-1), function(x){ sum(values >= ranges_init[x] & values < ranges_init[x+1])  } )
+ likelyhood[n_categ] <- sum(values >=  ranges_init[n_categ] )
+ likelyhood <- likelyhood/length(values)
+
+list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
+     prior = prior,
+     param_vals = ranges_init)
+}
+
+prob <- bayesian_posterior_parameter(values = subset$overcrowding, 
+                             total_values =  curves_description$overcrowding, 
+                             n_categ = 12 )
+
+barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3), names.arg = prob$param_vals)
+barplot(prob$prior, add = T, col = rgb(0, 1 , 0, alpha = 0.3))
