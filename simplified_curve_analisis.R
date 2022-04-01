@@ -1,5 +1,5 @@
-library(animation)
-results_over_time <- read.csv("LHS_sampling_results_over_time_1000res_20ws_26_seed.csv", 
+#library(animation)
+results_over_time <- read.csv("LHS_sampling_results_over_time_1500res_20ws_25_seed.csv", 
                               stringsAsFactors = F)
 
 
@@ -7,7 +7,7 @@ results_over_time <- read.csv("LHS_sampling_results_over_time_1000res_20ws_26_se
 ######## Curve classification, identify what sort of temporal patterns doies
 # the coef var has?
 
-clasfify_Curve <- function(cvar, t){
+clasfify_Curve <- function(cvar, t, full_classification = TRUE){
   type_curve <- NULL
   
   #these are indexes
@@ -18,8 +18,8 @@ clasfify_Curve <- function(cvar, t){
   initial_cvar <- cvar[init_t]
   
   significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-4
-
-  if (all(!significativos)) {return("flat")}
+  
+  if (all(!(significativos[-1]))) {return("flat")}
   
   if ( final_cvar > initial_cvar) {
     type_curve <- "inc"
@@ -28,34 +28,36 @@ clasfify_Curve <- function(cvar, t){
     }else{
       aumenta_coefvar <- c(NA, cvar[-length(cvar)]) > cvar 
     type_curve <- "dec"}
-
-  difer <- diff(cumsum(aumenta_coefvar[2:length(aumenta_coefvar)]))
-
-  state <- difer[1]
+  state <- aumenta_coefvar[2]
   
   inflpts <- c()
-  for (i in 2:length(difer)){
-    if (state != difer[i] & significativos[i]){
-      state <- difer[i]
+  
+  for (i in 3:length(aumenta_coefvar)){
+    
+    if (state != aumenta_coefvar[i] & significativos[i]){
+      state <- aumenta_coefvar[i]
       inflpts <- c( inflpts, state )# esto va a decir si es concavo o convexo la diferencia
     }
   }
-  inflpts <- if (length(inflpts)>0) inflpts[seq(from= 1, to=length(inflpts), by=2)]
+  #  print(aumenta_coefvar)
+    #inflpts <- if (length(inflpts)>0) inflpts[seq(from= 1, to=length(inflpts), by=2)]
 
-   for (i in inflpts){
-     type_curve <- paste(type_curve, if (i) "_convex" else "_concave",
-                         sep="")}
+  if (full_classification) {
+    for (i in inflpts[1]){
+      #type_curve <- paste(type_curve, if (i) "_convex" else "_concave", sep="")}
+      type_curve <- paste(type_curve, if (i) "_c" else "_c", sep="")}
+  }
+
   type_curve
 }
 
-quiero <- 15
+quiero <- 92
 clasfify_Curve(t=results_over_time$t[results_over_time$re==quiero],
-                 cvar = results_over_time$coef_var[results_over_time$re==quiero])
+                 cvar = results_over_time$coef_var[results_over_time$re==quiero], 
+               full_classification = T)
 
 plot(x=results_over_time$t[results_over_time$re==quiero],
               y = results_over_time$coef_var[results_over_time$re==quiero], type="l")
-
-
 
 n_sims <- max(results_over_time$re)
 
@@ -74,58 +76,86 @@ for (q in 1:n_sims){
   one_curve <- results_over_time[results_over_time$re==q, ]
   
   curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
-                                              t = one_curve$t)
+                                              t = one_curve$t, 
+                                              full_classification = F)
                                , one_curve[1, 7:12])
   }
 
-names(table(curves_description$type))[]
+table(curves_description$type)
+
+
 barplot(table(curves_description$type))
 
-fr <- which(curves_description$type=="dec")
 plot(1, xlim=c(0,30), ylim=c(0,0.5))
 hu<-1
-for (fre in fr){
-cvar <- results_over_time$coef_var[results_over_time$re==fre]
-t<- results_over_time$t[results_over_time$re==fre]
-#plot(t, cvar, type = "b", main=bquote(.(fre)))
-lines(t, cvar, col = rainbow(length(fr))[hu], lwd=2)
-text(t[31], cvar[31], labels = fre, col=rainbow(length(fr))[hu])
-hu<-hu+1
+simuls <- which(curves_description$type == 'inc_c_c')[1:20]
+for (fre in simuls){
+  cvar <- results_over_time$coef_var[results_over_time$re==fre]
+  t <- results_over_time$t[results_over_time$re==fre]
+  #plot(t, cvar, type = "b", main=bquote(.(fre)))
+  lines(t, cvar, col = rainbow(length(simuls))[hu], lwd=2)
+  text(t[31], cvar[31], labels = fre, col=rainbow(length(simuls))[hu])
+  hu<-hu+1
 }
-
-curves_description <- curves_description[
-  curves_description$type %in% names(table(curves_description$type))[table(curves_description$type)>10],]
 
 
 library(tree)
-# library(rpart)
-# 
+
 curves_description$type <- factor(curves_description$type)
-curves_description$overcrowding <- factor(curves_description$overcrowding)
-# 
-# 
-# fit <- rpart(type ~ world_reachability+
-#                max_initial_sz+
-#                overcrowding,
-#              method="class", data=curves_description[1:100,])
-# 
-# printcp(fit) # display the results
-# plot(fit) # visualize cross-validation results
-# text(fit)
-# summary(fit) # detailed summary of splits
-# 
-# 
+curves_description$overcrowding <- as.numeric(curves_description$overcrowding)
+
+names_frequent <- names(table(curves_description$type)[table(curves_description$type) > 20])
+
+curves_description_frequents <- curves_description[curves_description$type %in% names_frequent,  ]
+
+# re train with cross validation
+set.seed(26)
+
+test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, replace = F)
+# test_index <-c(
+#   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
+#   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
+#   sample(which(curves_description_frequents$type == "inc"), size = 80, replace = F),
+#   sample(which(curves_description_frequents$type == "dec"), size = 80, replace = F))
+
+
+train <- curves_description_frequents[test_index, ]
+test <- curves_description_frequents[-test_index, ]
+
 coef_var_tree_discrete <- tree(type ~ world_reachability+
                                  max_initial_sz+
                                  overcrowding+
                                  comp_symmetry+
                                  max_growth_rate+
                                  indiviudal_var_growth_rate,
-                               data=curves_description)
+                               data=train)
+
 
 plot(coef_var_tree_discrete)
 text(coef_var_tree_discrete)
 summary(coef_var_tree_discrete)
+
+#accuracy of first model
+sum(test$type == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
+
+plot(cv.tree(coef_var_tree_discrete))
+
+coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 4)
+plot(coef_var_tree_discrete_prune)
+text(coef_var_tree_discrete_prune, pretty = 0)
+summary(coef_var_tree_discrete_prune)
+
+# accudary of second
+sum(test$type == predict(coef_var_tree_discrete_prune, test, type="class"))/nrow(test)
+
+# cuales falla laclasificacion
+
+fr <-test_index[test$type != predict(coef_var_tree_discrete_prune, test, type="class")]
+
+fr <- fr[curves_description$type[fr]=="inc"]
+fr
+
+table(curves_description_frequents$type[fr])
 
 # 
 # curves_description <- curves_description[curves_description$simulation!=0, ]

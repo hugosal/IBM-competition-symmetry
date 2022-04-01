@@ -12,7 +12,7 @@
 source("circles_area_of_overlap.R")
 #source("get_ppis.R")
 
-seed_value <-26
+seed_value <-25
 set.seed(seed_value)
 
 #esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
@@ -217,7 +217,7 @@ timesteps <- 30   # length of each run
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 1000 # number of LHS samples
+n_reps <- 1500 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -234,9 +234,8 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                                                            upper = max_S/2, 
                                                            n_samples = n_reps)), # max initial size,
                       sample(x = (-10:15), n_reps, replace = TRUE), # number of overcrowding plants
-                      sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 2, 
-                                                           n_samples = n_reps)), # competition asymmetry parameter, # max growing size
+                      sample(c(uniform_LHS_sample_from_range(lower = 0, upper = 1,  n_samples = n_reps/2),
+                               uniform_LHS_sample_from_range(lower = 1,  upper = 100, n_samples = n_reps/2))), # competition asymmetry parameter, divided en two ranges
                       sample(uniform_LHS_sample_from_range(lower = 0.1, 
                                                            upper = 0.5, 
                                                            n_samples = n_reps)), # max growth rate
@@ -433,7 +432,7 @@ for (re in 1:nrow(LHS_param)){
   	# plants increase in size asymptotically
   
   
-  	if(!all(resources_obtained_p_ind <= pi * plantcomm$sz**2)){
+  	if(any( (resources_obtained_p_ind -  (pi * plantcomm$sz**2)) > 1e-10   )  ){
   	  stop("Something wrong with resource partitions")
   	}
   	
