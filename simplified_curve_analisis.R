@@ -77,7 +77,7 @@ for (q in 1:n_sims){
   
   curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
                                               t = one_curve$t, 
-                                              full_classification = F)
+                                              full_classification = T)
                                , one_curve[1, 7:12])
   }
 
@@ -140,13 +140,33 @@ sum(test$type == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
 
 plot(cv.tree(coef_var_tree_discrete))
 
-coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 4)
-plot(coef_var_tree_discrete_prune)
-text(coef_var_tree_discrete_prune, pretty = 0)
+coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
 summary(coef_var_tree_discrete_prune)
 
 # accudary of second
 sum(test$type == predict(coef_var_tree_discrete_prune, test, type="class"))/nrow(test)
+
+
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_initial_sz", replacement = "Initial size variation")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "world_reachability", replacement = "Spatial disarrangement")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
+
+
+levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dec.", "Dec. w dip",
+                                                     "Inc.", "Inc. w dip")
+
+png(paste("classifciation_tree_inc_dec_dips.png", sep = ""),   
+    width = 20, height = 12, units = "cm",
+    res = 300)
+
+plot(coef_var_tree_discrete_prune)
+text(coef_var_tree_discrete_prune, pretty = 0)
+
+dev.off()
+
+
 
 # cuales falla laclasificacion
 
@@ -190,36 +210,32 @@ table(curves_description_frequents$type[fr])
 #                    data = curves_description)
 # summary(lm_initial_y)
 # 
-# # set.seed(24)
-# # saveGIF({
-# # for (q in sample(x = 1:max(results_over_time$re), size = 20)){
-# # 
-# #   one_curve <- results_over_time[results_over_time$re==q, ]
-# # 
-# #   final_t <-max(one_curve$t)
-# #   final_y <- one_curve$coef_var[one_curve$t==final_t]
-# # 
-# #   initial_y <- one_curve$coef_var[one_curve$t==0]
-# # 
-# #   min_y <- min(one_curve$coef_var)
-# #   max_y <- max(one_curve$coef_var)
-# # 
-# #   infl_pt <- if (min_y < initial_y) min_y else max_y
-# #   infl_t <- one_curve$t[abs(one_curve$coef_var-infl_pt) < 1e-12 ]
-# #   if(length(infl_t)>1){next}
-# # 
-# #   plot(one_curve$t, one_curve$coef_var, type="l", ylim=c(0,0.4),
-# #        col="red", main=q, xlab="t",
-# #        ylab = "Coefficient of variation", lwd=2.5)
-# # 
-# #   points(final_t, final_y, col="blue", pch=19, cex=1.5)
-# #   points(0, initial_y, col="green", pch=19, cex=2)
-# #   points(infl_t, infl_pt, col="purple", pch=19, cex=1.5)
-# #   abline(v=infl_t, lty=2, lwd=1.5)
-# # 
-# #   }
-# #   }, movie.name = "coef_var_curves_examples.gif", interval = 2,
-# #   ani.width = 480, ani.height = 480)
+
+
+library(animation)
+set.seed(24)
+saveGIF({
+for (q in sample(which(curves_description_frequents$type=="dec_c"), 30)){
+
+  one_curve <- results_over_time[results_over_time$re==q, ]
+
+  final_t <-max(one_curve$t)
+  final_y <- one_curve$coef_var[one_curve$t==final_t]
+
+  initial_y <- one_curve$coef_var[one_curve$t==0]
+
+  plot(one_curve$t, one_curve$coef_var, type="l", ylim=c(0,0.4),
+       col="black", main=q, xlab="t",
+       ylab = "Coefficient of variation", lwd=3)
+
+  points(final_t, final_y, pch=19, cex=1.5)
+  points(0, initial_y,  pch=19, cex=1.5)
+  #points(infl_t, infl_pt, col="purple", pch=19, cex=1.5)
+  #abline(v=infl_t, lty=2, lwd=1.5)
+
+  }
+  }, movie.name = "coef_var_inc_examples.gif", interval = 2,
+  ani.width = 480, ani.height = 480)
 # # 
 # 
 # ########### que esta pasando con las que no convergen
@@ -278,10 +294,7 @@ table(curves_description_frequents$type[fr])
  table(curves_description$type)
  barplot(table(curves_description$type))
  
- fr <- which(curves_description$type=="inc_convex")
 
-
-subset <- curves_description[1:nrow(curves_description) %in% fr ,]
 
 bayesian_posterior_parameter <- function(values, total_values, 
                                          ranges_init = NULL, prior = NULL, 
@@ -322,10 +335,57 @@ list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
      param_vals = ranges_init)
 }
 
-prob <- bayesian_posterior_parameter(values = subset$comp_symmetry, 
-                             total_values =  curves_description$comp_symmetry, 
-                             n_categ = 12 )
 
-barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3), 
-        names.arg = round(prob$param_vals,2))
-barplot(prob$prior, add = T, col = rgb(0, 1 , 0, alpha = 0.3))
+range_for_assymetry <- c(seq(from = 0, to= 1, length.out = 7)[-7], seq(from = 1, to= 100, length.out = 6)) 
+
+
+type_simul <- "inc_c"
+
+fr <- which(curves_description$type==type_simul)
+subset <- curves_description[1:nrow(curves_description) %in% fr ,]
+#subset$overcrowding <- as.factor(subset$overcrowding)
+
+png(paste("parameter_posterior", type_simul, ".png", sep="") , 
+    width = 24, height = 12, units = "cm",
+    res = 300)
+{par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
+  variables <- c('Spatial disarrangement' = "world_reachability",
+                 'Initial size variation' = "max_initial_sz",
+                 'Overcrowding' = "overcrowding",
+                 'Competition symmetry' = "comp_symmetry",
+                 'Maximum growth rate' = "max_growth_rate",
+                 'Ind. variation in growth rate' = "indiviudal_var_growth_rate")
+  
+  for (va in seq_along(variables)){
+    
+    if (variables[va] =="comp_symmetry"){
+      prob <- bayesian_posterior_parameter(values = subset$comp_symmetry, 
+                                           total_values =  curves_description$comp_symmetry, 
+                                           ranges_init =  range_for_assymetry, 
+                                           n_categ = length(range_for_assymetry))
+      
+      
+    }else{
+      prob <- bayesian_posterior_parameter(values = subset[[variables[va]]], 
+                                           total_values =  curves_description[[variables[va]]], 
+                                           n_categ = 12)
+      }
+    barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3), 
+            names.arg = round(prob$param_vals,2),xlab=names(variables)[va],
+            main="", ylab="Probability")
+    
+    barplot(prob$prior, add = T, col = rgb(0, 1 , 0, alpha = 0.3))
+    
+  }
+  
+  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+  plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
+  legend('bottom',legend = c("Posterior", "Prior"),
+         fill=c(rgb(red = c(0, 0), green = c(0, 1), blue = c(1, 0), 
+                    alpha = 0.5 )), xpd = TRUE, horiz = TRUE, cex = 1)
+  
+  mtext("Increasing variation with dip", side = 3, line = - 2,
+        outer = TRUE)
+}
+dev.off()
+
