@@ -217,7 +217,7 @@ timesteps <- 30   # length of each run
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 1500 # number of LHS samples
+n_reps <- 400 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -227,6 +227,13 @@ intermediate_pop <- 16
 max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
 # cada fila va a ser una fila de parametros a usar
+
+consider <- c(world_reachability = FALSE, max_initial_sz = FALSE, n_overcrowding_plants = TRUE, 
+  comp_symmetry = FALSE, max_growth_rate = FALSE,indiviudal_var_growth_rate = FALSE)
+
+null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
+  comp_symmetry = 1, max_growth_rate = 0.1, indiviudal_var_growth_rate = 0)
+
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 10, 
                                                            n_samples = n_reps)), # wrl reach, 0 - 1
@@ -251,12 +258,19 @@ colnames(LHS_param) <- c("world_reachability",
                          "max_growth_rate",
                          "indiviudal_var_growth_rate")
 
+for (con in seq_along(consider)){
+  if ( !consider[con] ) {
+    LHS_param[,con ] <- rep(null_values[con], n_reps)
+  } 
+}
+
 
 results_over_time <- data.frame(re = numeric(n_reps * (timesteps + 1)),
                       t = numeric(n_reps * (timesteps + 1)),
                       size_mean = numeric(n_reps * (timesteps + 1)),
                       size_sd = numeric(n_reps * (timesteps + 1)), 
-                      size_skew = numeric(n_reps * (timesteps + 1)))
+                      size_skew = numeric(n_reps * (timesteps + 1)),
+                      total_biomass = numeric(n_reps * (timesteps + 1)) )
 counter <- 1
 for (re in 1:nrow(LHS_param)){
   print(paste( "re ", re))
@@ -314,7 +328,8 @@ for (re in 1:nrow(LHS_param)){
     results_over_time[counter, ] <- c(re, 0, 
                                       mean(plantcomm$sz), 
                                       sd(plantcomm$sz), 
-                                      e1071::skewness(plantcomm$sz))
+                                      e1071::skewness(plantcomm$sz),
+                                      sum(pi * plantcomm$sz**2))
     counter <- counter + 1
   
   for (t in 1:timesteps){
@@ -466,7 +481,8 @@ for (re in 1:nrow(LHS_param)){
   	results_over_time[counter, ] <- c(re, t, 
   	                                  mean(plantcomm$sz), 
   	                                  sd(plantcomm$sz), 
-  	                                  e1071::skewness(plantcomm$sz))
+  	                                  e1071::skewness(plantcomm$sz),
+                                      sum(pi * plantcomm$sz**2) )
   	counter <- counter + 1
 
   }
@@ -482,10 +498,10 @@ results_over_time <- cbind(results_over_time,
 results_over_time$coef_var <- results_over_time$size_sd/results_over_time$size_mean
 
 for (case in unique(results_over_time$re)){
-  results_over_time[results_over_time$re==case , 6:11] <- LHS_final[case, 1:6]
+  results_over_time[results_over_time$re==case , 7:12] <- LHS_final[case, 1:6]
 }
 
-write.csv(results_over_time, file = paste("LHS_sampling_results_over_time_",
-                                n_reps, "res_", ws, "ws_",
-                                 seed_value,"_seed.csv",
-                                sep = ""))
+
+
+write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "res_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
+print("Success")
