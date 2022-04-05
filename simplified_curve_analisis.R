@@ -8,8 +8,6 @@ results_over_time <- read.csv("LHS_sampling_results_over_time_1500res_20ws_25_se
 # the coef var has?
 
 clasfify_Curve <- function(cvar, t, full_classification = TRUE){
-  type_curve <- NULL
-  
   #these are indexes
   init_t <- which(t==0)
   final_t <- length(t)
@@ -65,9 +63,7 @@ curves_description <- data.frame(
   type = character(n_sims),
   world_reachability= numeric(n_sims),
   max_initial_sz = numeric(n_sims),
-  overcrowding = factor(numeric(n_sims), 
-                        levels = c(0:max(results_over_time$n_overcrowding_plants),
-                                   min(results_over_time$n_overcrowding_plants): -1)),
+  overcrowding = numeric(n_sims),
   comp_symmetry= numeric(n_sims),
   max_growth_rate= numeric(n_sims),
   indiviudal_var_growth_rate= numeric(n_sims), stringsAsFactors = F)
@@ -236,30 +232,9 @@ for (q in sample(which(curves_description_frequents$type=="dec_c"), 30)){
   }
   }, movie.name = "coef_var_inc_examples.gif", interval = 2,
   ani.width = 480, ani.height = 480)
-# # 
-# 
-# ########### que esta pasando con las que no convergen
-# 
-# results_over_time_weirds <- results_over_time[results_over_time$re %in% not_infl, ]
-# 
-# #7  15  17  19  20  22  31  32  37  39  40  57  58  59  63
-# 
-# 
-# plot(results_over_time$t,
-#      results_over_time$coef_var,
-#      type="n", xlab="t", ylab="Coefficient of variation")
-# for (re in not_converged){
-#   lines(results_over_time$t[results_over_time$re==re],
-#         results_over_time$coef_var[results_over_time$re==re],
-#         col = "gray", lwd=2)
-# }
-# 
-# 
-# 
-# #png("parameter_space_normal_vs_conspicuous.png",
-# #    width = 24, height = 12, units = "cm",
-# #    res = 300)
-# 
+
+
+
 
  results_over_time_weirds <- results_over_time[results_over_time$re %in% fr, ]
  
@@ -285,76 +260,153 @@ for (q in sample(which(curves_description_frequents$type=="dec_c"), 30)){
   plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
   legend('bottom',legend = c("All simulations", "Simulations with increasing variation"),
          fill=c("green","blue"), xpd = TRUE, horiz = TRUE, cex = 1.5)
-  # xpd = TRUE makes the legend plot to the figure
-}
+  }
 
  
 
  
- table(curves_description$type)
- barplot(table(curves_description$type))
- 
 
-
-bayesian_posterior_parameter <- function(values, total_values, 
-                                         ranges_init = NULL, prior = NULL, 
+bayesian_posterior_parameter <- function(values, 
+                                         total_values,
+                                         values_for_joint = NULL,
+                                         total_values_for_joint = NULL,
+                                         ranges_init_joint =NULL, 
+                                         ranges_init = NULL, 
+                                         prior = NULL, 
                                          n_categ = 10){
   N <- length(total_values)
   
-  if(is.factor(values)){
+  if (is.null(ranges_init)){
+    ranges_init <- seq(from = min(total_values),
+                       to = max(total_values),
+                       length.out = n_categ +1 )}
+  
+  if ( is.null(values_for_joint)) {
     
-    ranges_init <- sort(as.numeric(levels(values)))
-    prior <- sapply(seq_along(ranges_init), function(x){ sum(total_values == ranges_init[x])} )
+    if( is.factor(values)){
+      
+      ranges_init <- sort(as.numeric(levels(values)))
+      prior <- sapply(seq_along(ranges_init), function(x){ sum(total_values == ranges_init[x])} )
+      prior <- prior/N
+      
+      
+      likelyhood <- sapply(seq_along(ranges_init), function(x){ sum(values == ranges_init[x])  } )
+      likelyhood <- likelyhood/length(values)
+      
+      return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
+                  prior = prior,
+                  param_vals = ranges_init))
+    }
+    
+   prior <- sapply(1:n_categ, function(x){ sum(total_values >= ranges_init[x] & total_values < ranges_init[x+1])  } )
+   prior <- prior/N
+
+   likelyhood <- sapply(1:n_categ, function(x){ sum(values >= ranges_init[x] & values < ranges_init[x+1])  } )
+   likelyhood <- likelyhood/N
+  
+  return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
+       prior = prior,
+       param_vals = ranges_init[1:n_categ]))
+
+  }else{
+    
+    if (is.null(ranges_init_joint)){
+    ranges_init_joint <- seq(from = min(total_values_for_joint),
+                         to = max(total_values_for_joint),
+                         length.out = n_categ + 1)}
+    
+  
+    prior <- outer(X = 1:(n_categ),  
+                   Y = 1:(n_categ),
+                   FUN = Vectorize(function(x, y){
+                     is_x <- (total_values >= ranges_init[x]) & (total_values < ranges_init[x+1])
+                     is_y <- (total_values_for_joint >= ranges_init_joint[y]) & (total_values_for_joint < ranges_init_joint[y+1]) 
+                     
+                     return(sum(is_x & is_y)) }))
     prior <- prior/N
     
+   
     
-    likelyhood <- sapply(seq_along(ranges_init), function(x){ sum(values == ranges_init[x])  } )
-    likelyhood <- likelyhood/length(values)
+    likelyhood <- outer(X = 1:(n_categ),  
+                        Y = 1:(n_categ),
+                        FUN = Vectorize(function(x, y){
+                          is_x <- (values >= ranges_init[x]) & (values < ranges_init[x+1])
+                          is_y <- (values_for_joint >= ranges_init_joint[y]) & (values_for_joint < ranges_init_joint[y+1])
+                          return(sum(is_x & is_y)) }))
     
-    return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
-         prior = prior,
-         param_vals = ranges_init))
-  }
-  
-  if (is.null(ranges_init)){
-    ranges_init <- seq(from = min(total_values), to = max(total_values), length.out = n_categ)
-  }
+    likelyhood <- likelyhood/N
+    
+    posterior <- (prior*likelyhood)/sum(prior*likelyhood)
 
-  
- prior <- sapply(1:(n_categ-1), function(x){ sum(total_values >= ranges_init[x] & total_values < ranges_init[x+1])  } )
- prior[n_categ] <- sum(total_values >=  ranges_init[n_categ] )
- prior <- prior/N
-
-
- likelyhood <- sapply(1:(n_categ-1), function(x){ sum(values >= ranges_init[x] & values < ranges_init[x+1])  } )
- likelyhood[n_categ] <- sum(values >=  ranges_init[n_categ] )
- likelyhood <- likelyhood/length(values)
-
-list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
-     prior = prior,
-     param_vals = ranges_init)
+    
+    rownames(posterior) <- ranges_init_joint[1:n_categ]
+    colnames(posterior) <- ranges_init[1:n_categ]
+    
+    
+    return(list(posterior = posterior,
+                prior = prior,
+                param_vals = ranges_init[1:n_categ],
+                param_vals_joint = ranges_init_joint[1:n_categ]))
+    
+  }  
 }
 
 
-range_for_assymetry <- c(seq(from = 0, to= 1, length.out = 7)[-7], seq(from = 1, to= 100, length.out = 6)) 
+
+
+table(curves_description$type)
 
 
 type_simul <- "inc_c"
 
+
+variables <- c('Spatial disarrangement' = "world_reachability",
+               'Initial size variation' = "max_initial_sz",
+               'Overcrowding' = "overcrowding",
+               'Competition symmetry' = "comp_symmetry",
+               'Maximum growth rate' = "max_growth_rate",
+               'Ind. variation in growth rate' = "indiviudal_var_growth_rate")
+
+
 fr <- which(curves_description$type==type_simul)
 subset <- curves_description[1:nrow(curves_description) %in% fr ,]
-#subset$overcrowding <- as.factor(subset$overcrowding)
 
-png(paste("parameter_posterior", type_simul, ".png", sep="") , 
-    width = 24, height = 12, units = "cm",
-    res = 300)
+
+variables_for_joint <- variables[c(3, 4)]
+
+range_for_assymetry <- c(seq(from = 0, to= 1, length.out = 7)[-7],
+                         seq(from = 1, to= 100, length.out = 6)) 
+
+range_for_assymetry
+{
+prob_joint <- bayesian_posterior_parameter(values = subset[[variables_for_joint[1]]], 
+                                     total_values =  curves_description[[variables_for_joint[1]]],
+                                     values_for_joint = subset[[variables_for_joint[2]]], 
+                                     total_values_for_joint = curves_description[[variables_for_joint[2]]],
+                                     ranges_init_joint = if  (variables_for_joint[2]!="comp_symmetry") NULL else range_for_assymetry,
+                                     n_categ = 10)
+
+palette <- colorRampPalette(c('#f0f3ff','#0033BB'))(10)
+
+image(prob_joint$posterior, col = palette, axes=FALSE, main=type_simul)
+e <- expand.grid(seq(0,1, length.out = nrow(prob_joint$posterior)),                  seq(0,1, length.out =  nrow(prob_joint$posterior)))
+text(e, labels = round(prob_joint$posterior, 3))
+
+axis(2, at = seq(0,1, length.out=nrow(prob_joint$posterior) ), 
+     labels = round(as.numeric(rownames(prob_joint$posterior)), 2), tick = F)
+
+axis(1, at = seq(0, 1, length.out=nrow(prob_joint$posterior) ), 
+     labels = round(as.numeric(colnames(prob_joint$posterior)), 2), tick = F)
+
+mtext(1, text = names(variables_for_joint[1]), line = 2)
+mtext(2, text = names(variables_for_joint[2]), line = 2)
+}
+
+
+# png(paste("parameter_posterior", type_simul, ".png", sep="") , 
+#     width = 24, height = 12, units = "cm",
+#     res = 300)
 {par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
-  variables <- c('Spatial disarrangement' = "world_reachability",
-                 'Initial size variation' = "max_initial_sz",
-                 'Overcrowding' = "overcrowding",
-                 'Competition symmetry' = "comp_symmetry",
-                 'Maximum growth rate' = "max_growth_rate",
-                 'Ind. variation in growth rate' = "indiviudal_var_growth_rate")
   
   for (va in seq_along(variables)){
     
@@ -384,8 +436,8 @@ png(paste("parameter_posterior", type_simul, ".png", sep="") ,
          fill=c(rgb(red = c(0, 0), green = c(0, 1), blue = c(1, 0), 
                     alpha = 0.5 )), xpd = TRUE, horiz = TRUE, cex = 1)
   
-  mtext("Increasing variation with dip", side = 3, line = - 2,
+  mtext(type_simul, side = 3, line = - 2,
         outer = TRUE)
 }
-dev.off()
+#dev.off()
 
