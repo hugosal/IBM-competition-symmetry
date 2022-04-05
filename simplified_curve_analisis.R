@@ -1,7 +1,6 @@
 #library(animation)
-results_over_time <- read.csv("LHS_sampling_results_over_time_1500res_20ws_25_seed.csv", 
+results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2000_reps_20ws_25_seed.csv", 
                               stringsAsFactors = F)
-
 
 
 ######## Curve classification, identify what sort of temporal patterns doies
@@ -70,11 +69,11 @@ curves_description <- data.frame(
 
 for (q in 1:n_sims){
   one_curve <- results_over_time[results_over_time$re==q, ]
-  
+
   curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
                                               t = one_curve$t, 
                                               full_classification = T)
-                               , one_curve[1, 7:12])
+                               , one_curve[1, 8:13])
   }
 
 table(curves_description$type)
@@ -121,9 +120,7 @@ test <- curves_description_frequents[-test_index, ]
 coef_var_tree_discrete <- tree(type ~ world_reachability+
                                  max_initial_sz+
                                  overcrowding+
-                                 comp_symmetry+
-                                 max_growth_rate+
-                                 indiviudal_var_growth_rate,
+                                 comp_symmetry,
                                data=train)
 
 
@@ -136,8 +133,9 @@ sum(test$type == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
 
 plot(cv.tree(coef_var_tree_discrete))
 
-coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
+coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 9)
 summary(coef_var_tree_discrete_prune)
+
 
 # accudary of second
 sum(test$type == predict(coef_var_tree_discrete_prune, test, type="class"))/nrow(test)
@@ -161,51 +159,6 @@ plot(coef_var_tree_discrete_prune)
 text(coef_var_tree_discrete_prune, pretty = 0)
 
 dev.off()
-
-
-
-# cuales falla laclasificacion
-
-fr <-test_index[test$type != predict(coef_var_tree_discrete_prune, test, type="class")]
-
-fr <- fr[curves_description$type[fr]=="inc"]
-fr
-
-table(curves_description_frequents$type[fr])
-
-# 
-# curves_description <- curves_description[curves_description$simulation!=0, ]
-# 
-# curves_description[, -8] <- data.frame(scale(curves_description[, -8]))
-# 
-# #overcrowding+world_reachability+max_initial_sz +comp_symmetry+max_growth_rate+indiviudal_var_growth_rate
-# 
-# 
-# # value of the inflection point
-# lm_inf_pt <- lm(y_inflec ~ overcrowding+world_reachability+max_initial_sz +indiviudal_var_growth_rate,
-#                 data = curves_description)
-# 
-# 
-# summary(lm_inf_pt)
-# 
-# #position in time of inflection point
-# lm_y_infl_t <- lm(y_infl_t ~ overcrowding+world_reachability+max_initial_sz +max_growth_rate
-# ,
-#                  data = curves_description)
-# 
-# summary(lm_y_infl_t)
-# 
-# # variation at the end
-# lm_yfinal <- lm(yfinal ~ overcrowding+world_reachability+max_initial_sz +comp_symmetry
-# ,
-#                 data = curves_description)
-# summary(lm_yfinal)
-# 
-# # variation at start
-# lm_initial_y <- lm(yinit ~  max_initial_sz -1,
-#                    data = curves_description)
-# summary(lm_initial_y)
-# 
 
 
 library(animation)
@@ -235,36 +188,6 @@ for (q in sample(which(curves_description_frequents$type=="dec_c"), 30)){
 
 
 
-
- results_over_time_weirds <- results_over_time[results_over_time$re %in% fr, ]
- 
-{par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
-  variables <- c('Spatial disarrangement' = "world_reachability",
-                 'Initial size variation' = "max_initial_sz",
-                 'Overcrowgind' = "n_overcrowding_plants",
-                 'Competition symmetry' = "comp_symmetry",
-                 'Maximum growth rate' = "max_growth_rate",
-                 'Ind. variation in growth rate' = "indiviudal_var_growth_rate")
-  for (va in seq_along(variables)){
-    hist(results_over_time_weirds[[variables[va]]][results_over_time$t==1],
-         col = rgb(0,0,1,0.5), xlab=names(variables)[va],main="", freq = F,
-         breaks = seq(min(results_over_time[[variables[va]]]),
-                      max(results_over_time[[variables[va]]]), length.out=10))
-    hist(results_over_time[[variables[va]]][results_over_time_weirds$t==1],
-         col = rgb(0,1,0, 0.5), add=T, freq = F,
-         breaks = seq(min(results_over_time[[variables[va]]]),
-                      max(results_over_time[[variables[va]]]), length.out=10))
-  }
-
-  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
-  plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
-  legend('bottom',legend = c("All simulations", "Simulations with increasing variation"),
-         fill=c("green","blue"), xpd = TRUE, horiz = TRUE, cex = 1.5)
-  }
-
- 
-
- 
 
 bayesian_posterior_parameter <- function(values, 
                                          total_values,
@@ -363,16 +286,17 @@ type_simul <- "inc_c"
 variables <- c('Spatial disarrangement' = "world_reachability",
                'Initial size variation' = "max_initial_sz",
                'Overcrowding' = "overcrowding",
-               'Competition symmetry' = "comp_symmetry",
-               'Maximum growth rate' = "max_growth_rate",
-               'Ind. variation in growth rate' = "indiviudal_var_growth_rate")
+               'Competition symmetry' = "comp_symmetry"
+               #'Maximum growth rate' = "max_growth_rate",
+               #'Ind. variation in growth rate' = "indiviudal_var_growth_rate"
+               )
 
 
 fr <- which(curves_description$type==type_simul)
 subset <- curves_description[1:nrow(curves_description) %in% fr ,]
 
 
-variables_for_joint <- variables[c(3, 4)]
+variables_for_joint <- variables[c(2, 3)]
 
 range_for_assymetry <- c(seq(from = 0, to= 1, length.out = 7)[-7],
                          seq(from = 1, to= 100, length.out = 6)) 
@@ -403,10 +327,11 @@ mtext(2, text = names(variables_for_joint[2]), line = 2)
 }
 
 
+
 # png(paste("parameter_posterior", type_simul, ".png", sep="") , 
 #     width = 24, height = 12, units = "cm",
 #     res = 300)
-{par(mfrow=c(2,3),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
+{par(mfrow=c(2,2),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
   
   for (va in seq_along(variables)){
     
