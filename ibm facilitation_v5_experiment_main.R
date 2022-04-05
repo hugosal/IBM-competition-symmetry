@@ -217,7 +217,7 @@ timesteps <- 30   # length of each run
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 400 # number of LHS samples
+n_reps <- 2000 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -228,8 +228,8 @@ max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es u
 
 # cada fila va a ser una fila de parametros a usar
 
-consider <- c(world_reachability = FALSE, max_initial_sz = FALSE, n_overcrowding_plants = TRUE, 
-  comp_symmetry = FALSE, max_growth_rate = FALSE,indiviudal_var_growth_rate = FALSE)
+consider <- c(world_reachability = TRUE, max_initial_sz = TRUE, n_overcrowding_plants = TRUE, 
+  comp_symmetry = TRUE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
 
 null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
   comp_symmetry = 1, max_growth_rate = 0.1, indiviudal_var_growth_rate = 0)
@@ -260,7 +260,7 @@ colnames(LHS_param) <- c("world_reachability",
 
 for (con in seq_along(consider)){
   if ( !consider[con] ) {
-    LHS_param[,con ] <- rep(null_values[con], n_reps)
+    LHS_param[, con ] <- rep(null_values[con], n_reps)
   } 
 }
 
@@ -503,5 +503,5 @@ for (case in unique(results_over_time$re)){
 
 
 
-write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "res_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
+write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
 print("Success")
