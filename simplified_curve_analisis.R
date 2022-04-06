@@ -6,6 +6,7 @@ results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_o
 ######## Curve classification, identify what sort of temporal patterns doies
 # the coef var has?
 
+
 clasfify_Curve <- function(cvar, t, full_classification = TRUE){
   #these are indexes
   init_t <- which(t==0)
@@ -196,30 +197,36 @@ bayesian_posterior_parameter <- function(values,
                                          ranges_init_joint =NULL, 
                                          ranges_init = NULL, 
                                          prior = NULL, 
-                                         n_categ = 10){
+                                         n_categ = 10,
+                                         n_categ_joint = 10){
   N <- length(total_values)
   
   if (is.null(ranges_init)){
     ranges_init <- seq(from = min(total_values),
                        to = max(total_values),
-                       length.out = n_categ +1 )}
+                       length.out = n_categ +1 )
+    }else{
+      n_categ <- length(ranges_init)
+      ranges_init <- c(ranges_init, Inf)}
+  
+  
   
   if ( is.null(values_for_joint)) {
     
-    if( is.factor(values)){
-      
-      ranges_init <- sort(as.numeric(levels(values)))
-      prior <- sapply(seq_along(ranges_init), function(x){ sum(total_values == ranges_init[x])} )
-      prior <- prior/N
-      
-      
-      likelyhood <- sapply(seq_along(ranges_init), function(x){ sum(values == ranges_init[x])  } )
-      likelyhood <- likelyhood/length(values)
-      
-      return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
-                  prior = prior,
-                  param_vals = ranges_init))
-    }
+    # if( is.factor(values)){
+    #   
+    #   ranges_init <- sort(as.numeric(levels(values)))
+    #   prior <- sapply(seq_along(ranges_init), function(x){ sum(total_values == ranges_init[x])} )
+    #   prior <- prior/N
+    #   
+    #   
+    #   likelyhood <- sapply(seq_along(ranges_init), function(x){ sum(values == ranges_init[x])  } )
+    #   likelyhood <- likelyhood/length(values)
+    #   
+    #   return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
+    #               prior = prior,
+    #               param_vals = ranges_init))
+    # }
     
    prior <- sapply(1:n_categ, function(x){ sum(total_values >= ranges_init[x] & total_values < ranges_init[x+1])  } )
    prior <- prior/N
@@ -236,11 +243,14 @@ bayesian_posterior_parameter <- function(values,
     if (is.null(ranges_init_joint)){
     ranges_init_joint <- seq(from = min(total_values_for_joint),
                          to = max(total_values_for_joint),
-                         length.out = n_categ + 1)}
+                         length.out = n_categ_joint + 1)
+    }else{
+      n_categ_joint <- length(ranges_init_joint)
+      ranges_init_joint <- c(ranges_init_joint, Inf)}
     
   
-    prior <- outer(X = 1:(n_categ),  
-                   Y = 1:(n_categ),
+    prior <- outer(X = 1:n_categ,  
+                   Y = 1:n_categ_joint,
                    FUN = Vectorize(function(x, y){
                      is_x <- (total_values >= ranges_init[x]) & (total_values < ranges_init[x+1])
                      is_y <- (total_values_for_joint >= ranges_init_joint[y]) & (total_values_for_joint < ranges_init_joint[y+1]) 
@@ -250,8 +260,8 @@ bayesian_posterior_parameter <- function(values,
     
    
     
-    likelyhood <- outer(X = 1:(n_categ),  
-                        Y = 1:(n_categ),
+    likelyhood <- outer(X = 1:n_categ,  
+                        Y = 1:n_categ_joint,
                         FUN = Vectorize(function(x, y){
                           is_x <- (values >= ranges_init[x]) & (values < ranges_init[x+1])
                           is_y <- (values_for_joint >= ranges_init_joint[y]) & (values_for_joint < ranges_init_joint[y+1])
@@ -261,15 +271,23 @@ bayesian_posterior_parameter <- function(values,
     
     posterior <- (prior*likelyhood)/sum(prior*likelyhood)
 
+    # print(n_categ_joint)
+    # print(ranges_init_joint)
+    # 
+    # print(n_categ)
+    # print(ranges_init)
+    # 
+    # 
+    # print(dim(posterior))
     
-    rownames(posterior) <- ranges_init_joint[1:n_categ]
-    colnames(posterior) <- ranges_init[1:n_categ]
+    colnames(posterior) <- ranges_init_joint[1:n_categ_joint]
+    rownames(posterior) <- ranges_init[1:n_categ]
     
     
     return(list(posterior = posterior,
                 prior = prior,
                 param_vals = ranges_init[1:n_categ],
-                param_vals_joint = ranges_init_joint[1:n_categ]))
+                param_vals_joint = ranges_init_joint[1:n_categ_joint]))
     
   }  
 }
@@ -277,10 +295,6 @@ bayesian_posterior_parameter <- function(values,
 
 
 
-table(curves_description$type)
-
-
-type_simul <- "inc_c"
 
 
 variables <- c('Spatial disarrangement' = "world_reachability",
@@ -291,42 +305,99 @@ variables <- c('Spatial disarrangement' = "world_reachability",
                #'Ind. variation in growth rate' = "indiviudal_var_growth_rate"
                )
 
+table(curves_description$type)
+
+type_simul <- "inc_c"
 
 fr <- which(curves_description$type==type_simul)
 subset <- curves_description[1:nrow(curves_description) %in% fr ,]
 
 
-variables_for_joint <- variables[c(2, 3)]
+combinations <- combn(1:4, 2)
 
-range_for_assymetry <- c(seq(from = 0, to= 1, length.out = 7)[-7],
-                         seq(from = 1, to= 100, length.out = 6)) 
+ev <- 5
+range_for_assymetry <- c(seq(from = 0, to= 1, length.out = ev+1)[-(ev+1)],
+                         seq(from = 1, to= 80, length.out = ev+1)) 
 
-range_for_assymetry
+range_for_overcrowding <- seq(from=-10, to=15, by=2)
+
+png(paste("parameter_posterior_joint", type_simul, ".png", sep="") ,
+    width = 18, height = 12, units = "cm",
+    res = 300)
 {
-prob_joint <- bayesian_posterior_parameter(values = subset[[variables_for_joint[1]]], 
-                                     total_values =  curves_description[[variables_for_joint[1]]],
-                                     values_for_joint = subset[[variables_for_joint[2]]], 
-                                     total_values_for_joint = curves_description[[variables_for_joint[2]]],
-                                     ranges_init_joint = if  (variables_for_joint[2]!="comp_symmetry") NULL else range_for_assymetry,
-                                     n_categ = 10)
+layout(mat = matrix(c(1, 1, 2, 2, 3,  3,  4,  4, 5, 5, 6, 6, 0,  7, 7, 0), 
+                    nrow = 4, 
+                    ncol = 4),
+       heights = c(2, 2, 2, 2),
+       widths = c(3, 3, 3, 1))
 
-palette <- colorRampPalette(c('#f0f3ff','#0033BB'))(10)
+max_colobar <- 0.09
+for (k in 1:ncol(combinations)){
+  
+  variables_for_joint <- variables[combinations[, k]]
+  n_groups_paramter <- 13
+  ev <- (n_groups_paramter-1)/2
+    {
+  
+  range_this_rep <- if  (variables_for_joint[1] == "comp_symmetry"
+                         ) range_for_assymetry else if (variables_for_joint[1] == "overcrowding"
+                                                        ) range_for_overcrowding else NULL
+      
+  range_this_rep_joint <- if  (variables_for_joint[2] == "comp_symmetry"
+      ) range_for_assymetry else if (variables_for_joint[2] == "overcrowding"
+      ) range_for_overcrowding else NULL
+      
+  
+      prob_joint <- bayesian_posterior_parameter(values = subset[[variables_for_joint[1]]], 
+                                       total_values =  curves_description[[variables_for_joint[1]]],
+                                       values_for_joint = subset[[variables_for_joint[2]]], 
+                                       total_values_for_joint = curves_description[[variables_for_joint[2]]],
+                                       ranges_init = range_this_rep ,
+                                       ranges_init_joint = range_this_rep_joint,
+                                       n_categ = 10, n_categ_joint = 10)
+  
+  palette <- colorRampPalette(c('#ffffff','#200080'))(10)
+  par(c(3, 4, 3, 1) + 0.1)
+  image(prob_joint$posterior, col = palette, axes=FALSE,
+        main="", zlim = c(0, max_colobar))
+  
+  grid(nx = nrow(prob_joint$posterior), ny = ncol(prob_joint$posterior),
+       col = "gray", lty = 1)
+  
+  box(which = "plot", lty = "solid")
+  
+  axis(2, at = seq(0,1, length.out = ncol(prob_joint$posterior) ), 
+       labels = round(as.numeric(colnames(prob_joint$posterior)), 2),
+      lwd = 0, lwd.ticks = 1, cex.axis = 0.75)
+  
+  axis(1, at = seq(0, 1, length.out=nrow(prob_joint$posterior) ), 
+       labels = round(as.numeric(rownames(prob_joint$posterior)), 2),
+       lwd = 0, lwd.ticks = 1, cex.axis = 0.75)
+  
+  mtext(1, text = names(variables_for_joint[1]), line = 2, cex=0.8)
+  mtext(2, text = names(variables_for_joint[2]), line = 2, cex=0.8)
+  }
 
-image(prob_joint$posterior, col = palette, axes=FALSE, main=type_simul)
-e <- expand.grid(seq(0,1, length.out = nrow(prob_joint$posterior)),                  seq(0,1, length.out =  nrow(prob_joint$posterior)))
-text(e, labels = round(prob_joint$posterior, 3))
-
-axis(2, at = seq(0,1, length.out=nrow(prob_joint$posterior) ), 
-     labels = round(as.numeric(rownames(prob_joint$posterior)), 2), tick = F)
-
-axis(1, at = seq(0, 1, length.out=nrow(prob_joint$posterior) ), 
-     labels = round(as.numeric(colnames(prob_joint$posterior)), 2), tick = F)
-
-mtext(1, text = names(variables_for_joint[1]), line = 2)
-mtext(2, text = names(variables_for_joint[2]), line = 2)
 }
+par(mar=c(2, 1, 1, 4))
+
+pts_colorbar <- seq(0, max_colobar, length.out = 10)
+image(matrix(pts_colorbar, nrow = 1), axes=F,
+      col = palette, zlim=c(0, max_colobar))
+box(which = "plot", lty = "solid")
+
+axis(4, at = seq(0, 1, length.out = length(pts_colorbar)), 
+     labels = round(pts_colorbar, 2), 
+     lwd = 0, lwd.ticks = 1)
+
+mtext(text = "Probability", side = 2, cex = 0.8, line = 1)
 
 
+
+mtext(type_simul, side = 3, line = -3,
+      outer = TRUE)
+}
+dev.off()
 
 # png(paste("parameter_posterior", type_simul, ".png", sep="") , 
 #     width = 24, height = 12, units = "cm",
@@ -341,7 +412,13 @@ mtext(2, text = names(variables_for_joint[2]), line = 2)
                                            ranges_init =  range_for_assymetry, 
                                            n_categ = length(range_for_assymetry))
       
-      
+      }else if (variables[va] =="overcrowding"){
+        prob <- bayesian_posterior_parameter(values = subset$overcrowding, 
+                                             total_values =  curves_description$overcrowding, 
+                                             ranges_init =  range_for_overcrowding, 
+                                             n_categ = length(range_for_overcrowding))
+        
+        
     }else{
       prob <- bayesian_posterior_parameter(values = subset[[variables[va]]], 
                                            total_values =  curves_description[[variables[va]]], 
@@ -364,5 +441,6 @@ mtext(2, text = names(variables_for_joint[2]), line = 2)
   mtext(type_simul, side = 3, line = - 2,
         outer = TRUE)
 }
+
 #dev.off()
 
