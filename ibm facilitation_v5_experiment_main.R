@@ -217,7 +217,7 @@ timesteps <- 30   # length of each run
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 2000 # number of LHS samples
+n_reps <- 300 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -228,8 +228,32 @@ max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es u
 
 # cada fila va a ser una fila de parametros a usar
 
-consider <- c(world_reachability = TRUE, max_initial_sz = TRUE, n_overcrowding_plants = TRUE, 
-  comp_symmetry = TRUE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+
+###### lo que este dentro de esta seccion es solo para hacer el arbol complicandose
+#vector_dec_from_bin <- numeric(2**4)
+
+#binarynames <- sapply(X = 1:length(vector_dec_from_bin),
+                                         FUN = function(x){
+                              bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
+                              substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
+#var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
+
+#for(vars_t_inc in seq_along(var_to_include)) {
+
+# print(paste('##################', vars_t_inc))
+######
+# number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
+ consider <- c(world_reachability = FALSE, max_initial_sz = TRUE, n_overcrowding_plants = FALSE, 
+   comp_symmetry = FALSE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+
+consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
+              max_initial_sz = var_to_include[[vars_t_inc]][2], 
+              n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
+              comp_symmetry = var_to_include[[vars_t_inc]][4], 
+              max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+
+
+
 
 null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
   comp_symmetry = 1, max_growth_rate = 0.1, indiviudal_var_growth_rate = 0)
@@ -335,7 +359,7 @@ for (re in 1:nrow(LHS_param)){
   for (t in 1:timesteps){
     #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
 
-    print(paste( "t ", t))
+    #print(paste( "t ", t))
   
   	n = nrow(plantcomm)
   	
@@ -502,6 +526,9 @@ for (case in unique(results_over_time$re)){
 }
 
 
+# write.csv(results_over_time, file = paste("tree", number_var_rthis_run,"_variables_",paste(names(consider)[consider], collapse= "_"),
+#   "_",n_reps, "_reps.csv", sep = ""))
 
 write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
 print("Success")
+
