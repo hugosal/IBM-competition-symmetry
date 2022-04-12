@@ -310,7 +310,7 @@ for (re in 1:nrow(LHS_param)){
   
   # set population size
   initial.n <- intermediate_pop + n_overcrowding_plants
-  config_found <- c(4,5,8,9,10,13,15,16,17,18,20,24,25,26,29,32,34,35,36,37,40)
+  config_found <- c(4,5,9,10,13,16,17,20,25,29,36,49,64)
   
   if (! initial.n %in% config_found){
     print("adj")
