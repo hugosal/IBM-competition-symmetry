@@ -12,7 +12,7 @@
 source("circles_area_of_overlap.R")
 #source("get_ppis.R")
 
-seed_value <-25
+seed_value <-23
 set.seed(seed_value)
 
 #esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
@@ -230,29 +230,27 @@ max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es u
 
 
 ###### lo que este dentro de esta seccion es solo para hacer el arbol complicandose
-#vector_dec_from_bin <- numeric(2**4)
-
-#binarynames <- sapply(X = 1:length(vector_dec_from_bin),
-                                         FUN = function(x){
-                              bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
-                              substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
-#var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
-
-#for(vars_t_inc in seq_along(var_to_include)) {
-
+# vector_dec_from_bin <- numeric(2**4)
+#
+# binarynames <- sapply(X = 1:length(vector_dec_from_bin),
+#                                          FUN = function(x){
+#                               bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
+#                               substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
+# var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
+#
+# for(vars_t_inc in seq_along(var_to_include)) {
+#
 # print(paste('##################', vars_t_inc))
 ######
 # number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
  consider <- c(world_reachability = FALSE, max_initial_sz = TRUE, n_overcrowding_plants = FALSE, 
    comp_symmetry = FALSE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
 
-consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
-              max_initial_sz = var_to_include[[vars_t_inc]][2], 
-              n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
-              comp_symmetry = var_to_include[[vars_t_inc]][4], 
-              max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
-
-
+# consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
+#               max_initial_sz = var_to_include[[vars_t_inc]][2], 
+#               n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
+#               comp_symmetry = var_to_include[[vars_t_inc]][4], 
+#               max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
 
 
 null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
@@ -264,7 +262,9 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = max_S/2, 
                                                            n_samples = n_reps)), # max initial size,
-                      sample(x = (-10:15), n_reps, replace = TRUE), # number of overcrowding plants
+                      sample(round(uniform_LHS_sample_from_range(lower = -10.5, 
+                                                                 upper = 15.4,  # lower and upper chosen for rounding error
+                                                                 n_samples = n_reps))), # number of overcrowding plants
                       sample(c(uniform_LHS_sample_from_range(lower = 0, upper = 1,  n_samples = n_reps/2),
                                uniform_LHS_sample_from_range(lower = 1,  upper = 100, n_samples = n_reps/2))), # competition asymmetry parameter, divided en two ranges
                       sample(uniform_LHS_sample_from_range(lower = 0.1, 
