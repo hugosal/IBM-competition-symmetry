@@ -217,7 +217,7 @@ timesteps <- 30   # length of each run
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 300 # number of LHS samples
+n_reps <- 400 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -230,27 +230,26 @@ max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es u
 
 
 ###### lo que este dentro de esta seccion es solo para hacer el arbol complicandose
-# vector_dec_from_bin <- numeric(2**4)
-#
-# binarynames <- sapply(X = 1:length(vector_dec_from_bin),
-#                                          FUN = function(x){
-#                               bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
-#                               substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
-# var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
-#
-# for(vars_t_inc in seq_along(var_to_include)) {
-#
-# print(paste('##################', vars_t_inc))
-######
-# number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
- consider <- c(world_reachability = FALSE, max_initial_sz = TRUE, n_overcrowding_plants = FALSE, 
-   comp_symmetry = FALSE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+vector_dec_from_bin <- numeric(2**4)
+binarynames <- sapply(X = 1:length(vector_dec_from_bin),
+                                        FUN = function(x){
+                             bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
+                             substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
+var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
 
-# consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
-#               max_initial_sz = var_to_include[[vars_t_inc]][2], 
-#               n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
-#               comp_symmetry = var_to_include[[vars_t_inc]][4], 
-#               max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+for(vars_t_inc in seq_along(var_to_include)) {
+
+ print(paste('##################', vars_t_inc))
+
+ number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
+#   consider <- c(world_reachability = FALSE, max_initial_sz = TRUE, n_overcrowding_plants = FALSE, 
+#   comp_symmetry = FALSE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+
+consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
+             max_initial_sz = var_to_include[[vars_t_inc]][2], 
+             n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
+             comp_symmetry = var_to_include[[vars_t_inc]][4], 
+             max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
 
 
 null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
@@ -294,7 +293,8 @@ results_over_time <- data.frame(re = numeric(n_reps * (timesteps + 1)),
                       size_mean = numeric(n_reps * (timesteps + 1)),
                       size_sd = numeric(n_reps * (timesteps + 1)), 
                       size_skew = numeric(n_reps * (timesteps + 1)),
-                      total_biomass = numeric(n_reps * (timesteps + 1)) )
+                      total_biomass = numeric(n_reps * (timesteps + 1)),
+                      mean_competiton = numeric(n_reps * (timesteps + 1)))
 counter <- 1
 for (re in 1:nrow(LHS_param)){
   print(paste( "re ", re))
@@ -353,7 +353,8 @@ for (re in 1:nrow(LHS_param)){
                                       mean(plantcomm$sz), 
                                       sd(plantcomm$sz), 
                                       e1071::skewness(plantcomm$sz),
-                                      sum(pi * plantcomm$sz**2))
+                                      sum(pi * plantcomm$sz**2), 
+                                      NA)
     counter <- counter + 1
   
   for (t in 1:timesteps){
@@ -506,7 +507,8 @@ for (re in 1:nrow(LHS_param)){
   	                                  mean(plantcomm$sz), 
   	                                  sd(plantcomm$sz), 
   	                                  e1071::skewness(plantcomm$sz),
-                                      sum(pi * plantcomm$sz**2) )
+                                      sum(pi * plantcomm$sz**2), 
+                                      mean(competition_effect))
   	counter <- counter + 1
 
   }
@@ -522,13 +524,14 @@ results_over_time <- cbind(results_over_time,
 results_over_time$coef_var <- results_over_time$size_sd/results_over_time$size_mean
 
 for (case in unique(results_over_time$re)){
-  results_over_time[results_over_time$re==case , 7:12] <- LHS_final[case, 1:6]
+
+  results_over_time[results_over_time$re==case , 8:13] <- LHS_final[case, 1:6]
 }
 
 
-# write.csv(results_over_time, file = paste("tree", number_var_rthis_run,"_variables_",paste(names(consider)[consider], collapse= "_"),
-#   "_",n_reps, "_reps.csv", sep = ""))
-
-write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
+write.csv(results_over_time, file = paste("tree", number_var_rthis_run,"_variables_",paste(names(consider)[consider], collapse= "_"),
+ "_",n_reps, "_reps.csv", sep = ""))
+}
+#write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
 print("Success")
 
