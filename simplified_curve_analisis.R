@@ -2,7 +2,7 @@
 # results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2000_reps_20ws_25_seed.csv", 
 #                               stringsAsFactors = F)
 
-results_over_time <- read.csv("tree_steps/tree2_variables_n_overcrowding_plants_comp_symmetry_300_reps.csv", 
+results_over_time <- read.csv("tree_steps/tree2_variables_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
                              stringsAsFactors = F)
 
 
@@ -18,7 +18,7 @@ clasfify_Curve <- function(cvar, t, full_classification = TRUE){
   final_cvar <- cvar[final_t]
   initial_cvar <- cvar[init_t]
   
-  significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-4
+  significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-3
   
   if (all(!(significativos[-1]))) {return("flat")}
   
@@ -52,13 +52,13 @@ clasfify_Curve <- function(cvar, t, full_classification = TRUE){
   type_curve
 }
 
-# quiero <- 92
-# clasfify_Curve(t=results_over_time$t[results_over_time$re==quiero],
-#                  cvar = results_over_time$coef_var[results_over_time$re==quiero], 
-#                full_classification = T)
-# 
-# plot(x=results_over_time$t[results_over_time$re==quiero],
-#               y = results_over_time$coef_var[results_over_time$re==quiero], type="l")
+quiero <- 67
+clasfify_Curve(t=results_over_time$t[results_over_time$re==quiero],
+                 cvar = results_over_time$coef_var[results_over_time$re==quiero],
+               full_classification = T)
+results_over_time$n_overcrowding_plants[results_over_time$re==67][1]
+plot(x=results_over_time$t[results_over_time$re==quiero],
+              y = results_over_time$coef_var[results_over_time$re==quiero], type="l")
 
 n_sims <- max(results_over_time$re)
 
@@ -77,7 +77,7 @@ for (q in 1:n_sims){
   curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
                                               t = one_curve$t, 
                                               full_classification = T)
-                               , one_curve[1, 8:13])
+                               , one_curve[1, 9:14])
   }
 
 table(curves_description$type)
@@ -88,17 +88,18 @@ table(curves_description$type)
 #  png("coefvar_per_biomass_dec_c.png", 
 #      width = 12, height = 12, units = "cm",
 #      res = 300)
-# plot(1, xlim=c(0,400), ylim=c(0,0.5), xlab="Biomass", ylab="Coef. Var")
-# hu<-1
-# simuls <- which(curves_description$type == 'dec_c')[1:20]
-# for (fre in simuls){
-#   cvar <- results_over_time$coef_var[results_over_time$re==fre]
-#   t <- results_over_time$total_biomass[results_over_time$re==fre]
-#   #plot(t, cvar, type = "b", main=bquote(.(fre)))
-#   lines(t, cvar, col = rainbow(length(simuls))[hu], lwd=2)
-#   text(t[31], cvar[31], labels = fre, col=rainbow(length(simuls))[hu])
-#   hu<-hu+1
-# }
+ plot(1, xlim=c(0,30), ylim=c(0,0.03), xlab="t", ylab="Coef. Var")
+ hu<-1
+ simuls <- which(curves_description$type == 'inc_c')[1:16]
+ for (fre in simuls){
+   cvar <- results_over_time$coef_var[results_over_time$re==fre]
+
+   t <- results_over_time$t[results_over_time$re==fre]
+   #plot(t, cvar, type = "b", main=bquote(.(fre)))
+   lines(t, cvar, col = rainbow(length(simuls))[hu], lwd=2)
+   text(t[31], cvar[31], labels = fre, col=rainbow(length(simuls))[hu])
+   hu<-hu+1
+ }
 # dev.off()
 # 
 # library(tree)

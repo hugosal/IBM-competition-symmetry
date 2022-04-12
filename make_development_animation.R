@@ -339,11 +339,26 @@ intermediate_pop <- 16
 # The maximum size of plants such that they have just enough resources is
 max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
-world_reachablity <- 10
-max_initial_size <- 0.8
-n_overcrowding_plants <- 10
-theta <- 10
-max_grwth_rt <- 0.2
+# 13
+# [1] 7
+# [1] 13
+# [1] 8
+# [1] 13
+# [1] 8
+# [1] 8
+# [1] 14
+# [1] 8
+# [1] 12
+# [1] 12
+# [1] 8
+# [1] 7
+
+
+world_reachablity <- 0
+max_initial_size <- 0.5
+n_overcrowding_plants <- -8
+theta <-  62.58284
+max_grwth_rt <- 0.1
 indiviudal_var_growth_rate <- 0
 
 initial.n <- intermediate_pop + n_overcrowding_plants
