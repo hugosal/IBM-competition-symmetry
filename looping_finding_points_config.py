@@ -74,7 +74,7 @@ def plot_transformation(cordinates, parameters):
 
 ws = 20
 n_row_fst = 41
-ya_estan =[ 4 , 9 ,16 ,25 ,36 ,49 , 8 ,18 ,32, 50, 72, 98, 20,5,13,25,40,10,34,17,29,26,37,8,15,24,16,9,36,35]
+ya_estan = [int(i**2) for i in range(1, 7) ]# 4 , 9 ,16 ,25 ,36 ,49 , 8 ,18 ,32, 50, 72, 98, 20,5,13,25,40,10,34,17,29,26,37,8,15,24,16,9,36,35]
 
 def search_inside_limits(n_row_fst, ws, level, position, ya_estan ):
 	x = np.linspace(-30, 30, n_row_fst + 1)
@@ -103,14 +103,13 @@ def search_inside_limits(n_row_fst, ws, level, position, ya_estan ):
 		print(j)
 		for lev in range(level[0], level[1]):
 			for i in np.linspace(2, 7, 3000):# poner 5000
+				#parameters = [j, 0, 0 ,  i]# asi estaba
 				parameters = [j, 0, 0 ,  i]
 				transformed = transform_coordinates(cordinates=cordinates, parameters=parameters, lvl=lev)
 				transformed = transformed[np.all(transformed[:,0:2] >= 0, axis=1) , :]
 				transformed = transformed[np.all(transformed[:,0:2] < ws, axis=1 ) , :]
 				dist_mat = distances_torus(transformed[:,0], transformed[:,1], ws)
 				#plot_transformation(cordinates = cordinates, parameters= parameters)# para compara con R
-
-
 
 				if np.shape(dist_mat)[0] >= 4 and np.shape(dist_mat)[0] <= 40 :
 					sum_cost = 0		
@@ -162,7 +161,7 @@ for n in found:
 	cordinates = np.array([Xf, Yf, [1]*len(Xf) ])
 
 
-	for i in np.linspace(0.9 * this_scale, 1.1 * this_scale, 10000):#poner 8000
+	for i in np.linspace(0.7 * this_scale, 1.3 * this_scale, 10000):#poner 8000
 		parameters = [n[2][0], 0, 0 ,  i]
 		transformed = transform_coordinates(cordinates=cordinates, parameters=parameters, lvl=n[0])
 		transformed = transformed[np.all(transformed[:,0:2] >= 0, axis=1) , :]
@@ -176,9 +175,20 @@ for n in found:
 		if sum_cost < best_sofar and np.shape(dist_mat)[0]==n[1] :
 			best_sofar = sum_cost
 			this_cords = transformed
-	
-	rows.append([n[1]]+[str(i[0])+":"+str(i[1]) for i in this_cords])
 
-writer = csv.writer(open("configurations/point_configurations3.csv", mode="w", newline=""))
+	# verifica que de hecho tenga 4 vecinos equidistantes
+	dist_mat_final_test = distances_torus(this_cords[:,0], this_cords[:,1], ws)
+	si_queda = True
+	for i in dist_mat_final_test:
+		fila = np.sort(i)
+		if any(np.diff(fila[1:5]) > 0.001):
+			si_queda = False
+	
+	if si_queda:
+		rows.append([n[1]]+[str(i[0])+":"+str(i[1]) for i in this_cords])
+
+writer = csv.writer(open("configurations/point_configurations_improved.csv", mode="w", newline=""))
 writer.writerows(rows)
 print("fin")
+
+
