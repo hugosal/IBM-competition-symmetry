@@ -2,7 +2,7 @@
 # results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2000_reps_20ws_25_seed.csv", 
 #                               stringsAsFactors = F)
 
-results_over_time <- read.csv("tree_steps/tree2_variables_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
+results_over_time <- read.csv("tree_steps/tree4_variables_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
                              stringsAsFactors = F)
 
 
@@ -52,7 +52,7 @@ clasfify_Curve <- function(cvar, t, full_classification = TRUE){
   type_curve
 }
 
-quiero <- 67
+quiero <- 27
 clasfify_Curve(t=results_over_time$t[results_over_time$re==quiero],
                  cvar = results_over_time$coef_var[results_over_time$re==quiero],
                full_classification = T)
@@ -88,12 +88,11 @@ table(curves_description$type)
 #  png("coefvar_per_biomass_dec_c.png", 
 #      width = 12, height = 12, units = "cm",
 #      res = 300)
- plot(1, xlim=c(0,30), ylim=c(0,0.03), xlab="t", ylab="Coef. Var")
+ plot(1, xlim=c(0,30), ylim=c(0,0.5), xlab="t", ylab="Coef. Var")
  hu<-1
- simuls <- which(curves_description$type == 'inc_c')[1:16]
+ simuls <- which(curves_description$type == 'inc')[15:30]
  for (fre in simuls){
    cvar <- results_over_time$coef_var[results_over_time$re==fre]
-
    t <- results_over_time$t[results_over_time$re==fre]
    #plot(t, cvar, type = "b", main=bquote(.(fre)))
    lines(t, cvar, col = rainbow(length(simuls))[hu], lwd=2)
@@ -315,7 +314,7 @@ variables <- c('Spatial disarrangement' = "world_reachability",
 
 table(curves_description$type)
 
-type_simul <- "flat"
+type_simul <- "inc_c"
 
 fr <- which(curves_description$type==type_simul)
 subset <- curves_description[1:nrow(curves_description) %in% fr ,]
@@ -336,8 +335,7 @@ layout(mat = matrix(c(1, 1, 2, 2, 3,  3,  4,  4, 5, 5, 6, 6, 0,  7, 7, 0),
                     ncol = 4),
        heights = c(2, 2, 2, 2),
        widths = c(3, 3, 3, 1))
-
-max_colobar <- 0.09
+max_colobar <- 0.1
 for (k in 1:ncol(combinations)){
   
   variables_for_joint <- variables[combinations[, k]]
@@ -402,15 +400,16 @@ mtext(text = "Probability", side = 2, cex = 0.8, line = 1)
 
 mtext(type_simul, side = 3, line = -3,
       outer = TRUE)
-}
+ }
+ 
 dev.off()
 # 
 # # png(paste("parameter_posterior", type_simul, ".png", sep="") , 
 # #     width = 24, height = 12, units = "cm",
 # #     res = 300)
-{par(mfrow=c(1,2),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
+{par(mfrow=c(2,2),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
 
-  for (va in c(3,4)){#seq_along(variables)){
+  for (va in c(1,2,3,4)){#seq_along(variables)){
 
     if (variables[va] =="comp_symmetry"){
       prob <- bayesian_posterior_parameter(values = subset$comp_symmetry,

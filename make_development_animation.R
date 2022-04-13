@@ -1,12 +1,11 @@
 # script to make a gif animation of the development of a plant pop given a 
 # set of population attribute parameters
-source("circles_area_of_overlap.R")
-seed_value <-21
-library(animation)
-set.seed(seed_value)
+gc()
 
-seed_value <-21
-set.seed(seed_value)
+source("circles_area_of_overlap.R")
+library(animation)
+
+
 
 #esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
 # de tarl manera que center_x y center_y esten en el centro del mundo
@@ -329,7 +328,7 @@ ws <- 20 # world size
 
 timesteps <- 30   # length of each run
 
-slf_thinning_limit <- 0.2 # if competition effect is stronger or equal to this
+slf_thinning_limit <- -1 # if competition effect is stronger or equal to this
 #                           plants will die
 
 
@@ -339,30 +338,26 @@ intermediate_pop <- 16
 # The maximum size of plants such that they have just enough resources is
 max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
-# 13
-# [1] 7
-# [1] 13
-# [1] 8
-# [1] 13
-# [1] 8
-# [1] 8
-# [1] 14
-# [1] 8
-# [1] 12
-# [1] 12
-# [1] 8
-# [1] 7
+
+world_reachablity <- 0.5561866
+max_initial_size <- 0.643868
+n_overcrowding_plants <- 3
+theta <-  28.89622
 
 
-world_reachablity <- 0
-max_initial_size <- 0.5
-n_overcrowding_plants <- -8
-theta <-  62.58284
+seed_value <-34
+set.seed(seed_value)
+
 max_grwth_rt <- 0.1
 indiviudal_var_growth_rate <- 0
 
+y_lim_coefvar <- 0.5
+
+
 initial.n <- intermediate_pop + n_overcrowding_plants
-config_found <- c(4,5,8,9,10,13,15,16,17,18,20,24,25,26,29,32,34,35,36,37,40)
+config_found <- c(4,5,9,10,13,16,17,20,25,29,36,49,64)
+mean_coef_compt <-c(NA)
+
 
 if (! initial.n %in% config_found){
   print("adj")
@@ -408,10 +403,18 @@ ind_grwth_rt <- runif(min = 1,
 a <- (4 * (max_grwth_rt * ind_grwth_rt))/(max_S * ind_s_var)
 b <- (4 * (max_grwth_rt * ind_grwth_rt))/((max_S * ind_s_var)**2)
 
+times <- c(0)
+coef_vars <- c(sd(plantcomm$sz)/mean(plantcomm$sz))
+
+
 
 saveGIF({
   for (t in 1:timesteps){
-    par(mfrow=c(1,2))
+    layout(mat = matrix(c(1,1,3,2), 
+                        nrow = 2, 
+                        ncol = 2),
+           heights = c(2, 1, 1),
+           widths = c(2, 1, 1))
     plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
     if (nrow(dead_plants)>0){
     plot_plantcomm_deads(dead_plants, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
@@ -426,11 +429,21 @@ saveGIF({
                         S[max]==.(round(max_S, 3))~","~
                         M[grt]==.(round(max_grwth_rt,2))),
           side = 1, line = 4)
+    par(mar=c(5, 4, 2, 2) + 0.1)
     hist(plantcomm$sz, xlab="Plant size", freq = T, main="",
          ylim = c(0, initial.n ), 
          breaks = seq(from =0, to = max_S * 1.2, length.out = 10  ))
     
     print(paste( "t ", t))
+    par(mar=c(5, 4, 4, 4) + 0.1)
+    plot(times, coef_vars, xlim = c(0,30), ylim =c(0, y_lim_coefvar), xlab="t",
+         ylab="Coefficient of Variation", lwd=2, type="l", main="")
+    par(new = TRUE)
+    plot(times, mean_coef_compt, type = "l", axes = FALSE, bty = "n", lwd=2,
+         xlab = "", ylab = "", col="darkblue", ylim=c(0,1), xlim=c(0,30))
+    axis(side=4, at = seq(0, 1, length = 3 ), col="darkblue", col.axis ="darkblue" )
+    mtext("Competition", side=4, line=2, col="darkblue")
+    
     
     n = nrow(plantcomm)
     
@@ -541,7 +554,7 @@ saveGIF({
     # plants increase in size asymptotically
     
     
-    if(!all(resources_obtained_p_ind <= pi * plantcomm$sz**2)){
+    if(any( (resources_obtained_p_ind -  (pi * plantcomm$sz**2)) > 1e-10   )  ){
       stop("Something wrong with resource partitions")
     }
     
@@ -568,14 +581,14 @@ saveGIF({
       rownames(plantcomm) = 1:nrow(plantcomm)
       a <- a[!dead_by_self_thinning]
       b <- b[!dead_by_self_thinning]
-      
-      
-      
     }
+    times <- c(times, t)
+    coef_vars <- c(coef_vars, sd(plantcomm$sz)/mean(plantcomm$sz))
+    mean_coef_compt <- c(mean_coef_compt, mean(competition_effect))
     
     
   }
   
 }, movie.name = "example_develop_1.gif", interval = 1, 
-ani.width = 960, ani.height = 480)
+ani.width = 750, ani.height = 500)
     

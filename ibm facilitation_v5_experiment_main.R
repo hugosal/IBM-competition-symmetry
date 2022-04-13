@@ -217,7 +217,7 @@ timesteps <- 30   # length of each run
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 400 # number of LHS samples
+n_reps <- 2000 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -237,19 +237,18 @@ binarynames <- sapply(X = 1:length(vector_dec_from_bin),
                              substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
 var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
 
-for(vars_t_inc in seq_along(var_to_include)) {
+# for(vars_t_inc in seq_along(var_to_include)) {
+ # print(paste('##################', vars_t_inc))
 
- print(paste('##################', vars_t_inc))
+ # number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
+  consider <- c(world_reachability = TRUE, max_initial_sz = TRUE, n_overcrowding_plants = TRUE,
+  comp_symmetry = TRUE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
 
- number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
-#   consider <- c(world_reachability = FALSE, max_initial_sz = TRUE, n_overcrowding_plants = FALSE, 
-#   comp_symmetry = FALSE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
-
-consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
-             max_initial_sz = var_to_include[[vars_t_inc]][2], 
-             n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
-             comp_symmetry = var_to_include[[vars_t_inc]][4], 
-             max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+# consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
+#              max_initial_sz = var_to_include[[vars_t_inc]][2], 
+#              n_overcrowding_plants = var_to_include[[vars_t_inc]][3],
+#              comp_symmetry = var_to_include[[vars_t_inc]][4], 
+#              max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
 
 
 null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
@@ -261,8 +260,8 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = max_S/2, 
                                                            n_samples = n_reps)), # max initial size,
-                      sample(round(uniform_LHS_sample_from_range(lower = -10.5, 
-                                                                 upper = 15.4,  # lower and upper chosen for rounding error
+                      sample(floor(uniform_LHS_sample_from_range(lower = -10, 
+                                                                 upper = 15,  # lower and upper chosen for rounding error
                                                                  n_samples = n_reps))), # number of overcrowding plants
                       sample(c(uniform_LHS_sample_from_range(lower = 0, upper = 1,  n_samples = n_reps/2),
                                uniform_LHS_sample_from_range(lower = 1,  upper = 100, n_samples = n_reps/2))), # competition asymmetry parameter, divided en two ranges
@@ -280,6 +279,7 @@ colnames(LHS_param) <- c("world_reachability",
                          "comp_symmetry", 
                          "max_growth_rate",
                          "indiviudal_var_growth_rate")
+
 
 for (con in seq_along(consider)){
   if ( !consider[con] ) {
@@ -529,9 +529,9 @@ for (case in unique(results_over_time$re)){
 }
 
 
-write.csv(results_over_time, file = paste("tree", number_var_rthis_run,"_variables_",paste(names(consider)[consider], collapse= "_"),
- "_",n_reps, "_reps.csv", sep = ""))
-}
-#write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
+# write.csv(results_over_time, file = paste("tree", number_var_rthis_run,"_variables_",paste(names(consider)[consider], collapse= "_"),
+#  "_",n_reps, "_reps.csv", sep = ""))
+# }
+write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
 print("Success")
 
