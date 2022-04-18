@@ -1,9 +1,9 @@
 #library(animation)
-# results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2000_reps_20ws_25_seed.csv", 
-#                               stringsAsFactors = F)
+results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2000_reps_20ws_26_seed.csv",
+                              stringsAsFactors = F)
 
-results_over_time <- read.csv("tree_steps/tree4_variables_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
-                             stringsAsFactors = F)
+# results_over_time <- read.csv("tree_steps/tree4_variables_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
+#                              stringsAsFactors = F)
 
 
 ######## Curve classification, identify what sort of temporal patterns doies
@@ -83,6 +83,7 @@ for (q in 1:n_sims){
 table(curves_description$type)
 
 
+
 #barplot(table(curves_description$type))
 
 #  png("coefvar_per_biomass_dec_c.png", 
@@ -101,72 +102,152 @@ table(curves_description$type)
  }
 # dev.off()
 # 
-# library(tree)
-# 
-# curves_description$type <- factor(curves_description$type)
-# curves_description$overcrowding <- as.numeric(curves_description$overcrowding)
-# 
-# names_frequent <- names(table(curves_description$type)[table(curves_description$type) > 20])
-# 
-# curves_description_frequents <- curves_description[curves_description$type %in% names_frequent,  ]
-# 
-# # re train with cross validation
-# set.seed(26)
-# 
-# test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, replace = F)
-# # test_index <-c(
-# #   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
-# #   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
-# #   sample(which(curves_description_frequents$type == "inc"), size = 80, replace = F),
-# #   sample(which(curves_description_frequents$type == "dec"), size = 80, replace = F))
-# 
-# 
-# train <- curves_description_frequents[test_index, ]
-# test <- curves_description_frequents[-test_index, ]
-# 
-# coef_var_tree_discrete <- tree(type ~ world_reachability+
-#                                  max_initial_sz+
-#                                  overcrowding+
-#                                  comp_symmetry,
-#                                data=train)
-# 
-# 
-# plot(coef_var_tree_discrete)
-# text(coef_var_tree_discrete)
-# summary(coef_var_tree_discrete)
-# 
-# #accuracy of first model
-# sum(test$type == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
-# 
-# plot(cv.tree(coef_var_tree_discrete))
-# 
-# coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 9)
-# summary(coef_var_tree_discrete_prune)
-# 
-# 
-# # accudary of second
-# sum(test$type == predict(coef_var_tree_discrete_prune, test, type="class"))/nrow(test)
-# 
-# 
-# coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_initial_sz", replacement = "Initial size variation")
-# coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "world_reachability", replacement = "Spatial disarrangement")
-# coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
-# coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
-# coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
-# 
-# 
-# levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dec.", "Dec. w dip",
-#                                                      "Inc.", "Inc. w dip")
-# 
-# png(paste("classifciation_tree_inc_dec_dips.png", sep = ""),   
-#     width = 20, height = 12, units = "cm",
-#     res = 300)
-# 
-# plot(coef_var_tree_discrete_prune)
-# text(coef_var_tree_discrete_prune, pretty = 0)
-# 
-# dev.off()
-# 
+library(tree)
+
+curves_description$type <- factor(curves_description$type)
+
+curves_description$type_inc_dec <- factor(sapply(curves_description$type, function(x){
+  if (x %in% c("inc_c", "inc")) "inc" else "dec"
+}))
+
+curves_description$type_c_noc <- factor(sapply(curves_description$type, function(x){
+  if (x %in% c("inc_c", "dec_c")) "C" else "N"
+}))
+
+
+curves_description$overcrowding <- as.numeric(curves_description$overcrowding)
+
+names_frequent <- names(table(curves_description$type)[table(curves_description$type) > 20])
+
+curves_description_frequents <- curves_description[curves_description$type %in% names_frequent,  ]
+
+# re train with cross validation
+set.seed(26)
+
+test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, replace = F)
+# test_index <-c(
+#   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
+#   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
+#   sample(which(curves_description_frequents$type == "inc"), size = 80, replace = F),
+#   sample(which(curves_description_frequents$type == "dec"), size = 80, replace = F))
+
+
+train <- curves_description_frequents[test_index, ]
+test <- curves_description_frequents[-test_index, ]
+
+coef_var_tree_discrete <- tree(type_inc_dec ~ world_reachability+
+                                 max_initial_sz+
+                                 overcrowding+
+                                 comp_symmetry,
+                               data=train)
+
+
+plot(coef_var_tree_discrete)
+text(coef_var_tree_discrete)
+summary(coef_var_tree_discrete)
+
+#accuracy of first model
+sum(test$type_inc_dec == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
+
+# to know what type of simulations are harder to predict
+
+wrongly_predicted <- test[test$type_inc_dec != predict(coef_var_tree_discrete, test, type="class"),]
+
+
+table(curves_description$type_inc_dec)
+table(wrongly_predicted$type_inc_dec)
+
+
+plot(cv.tree(coef_var_tree_discrete))
+
+coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
+summary(coef_var_tree_discrete_prune)
+
+# accudary of second
+pcntg <- sum(test$type_inc_dec == predict(coef_var_tree_discrete_prune, 
+                                          test, type="class"))/nrow(test)*100
+pcntg <- paste(round(pcntg, 1),"%", sep="" )
+
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_initial_sz", replacement = "Initial size variation")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "world_reachability", replacement = "Spatial disarrangement")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
+
+
+levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dec.",  "Inc.")
+
+png(paste("classifciation_tree_inc_dec.png", sep = ""),
+    width = 27, height = 18, units = "cm",
+    res = 300)
+
+plot(coef_var_tree_discrete_prune)
+text(coef_var_tree_discrete_prune, pretty = 0)
+
+text(3,850,  bquote(.(pcntg)~" Cross-validation\n predicccion accuracy "))
+
+dev.off()
+
+############# repeat for c or no c
+
+set.seed(25)
+
+test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, replace = F)
+# test_index <-c(
+#   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
+#   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
+#   sample(which(curves_description_frequents$type == "inc"), size = 80, replace = F),
+#   sample(which(curves_description_frequents$type == "dec"), size = 80, replace = F))
+
+
+train <- curves_description_frequents[test_index, ]
+test <- curves_description_frequents[-test_index, ]
+
+coef_var_tree_discrete <- tree(type_c_noc ~ world_reachability+
+                                 max_initial_sz+
+                                 overcrowding+
+                                 comp_symmetry,
+                               data=train)
+
+
+plot(coef_var_tree_discrete)
+text(coef_var_tree_discrete)
+summary(coef_var_tree_discrete)
+
+#accuracy of first model
+sum(test$type_c_noc == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
+
+plot(cv.tree(coef_var_tree_discrete))
+
+coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
+summary(coef_var_tree_discrete_prune)
+
+# accudary of second
+pcntg <- sum(test$type_c_noc == predict(coef_var_tree_discrete_prune, 
+                                          test, type="class"))/nrow(test)*100
+pcntg <- paste(round(pcntg, 1),"%", sep="" )
+
+
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_initial_sz", replacement = "Initial size variation")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "world_reachability", replacement = "Spatial disarrangement")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
+
+
+levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dip", "No dip")
+
+png(paste("classifciation_tree_dip_nodip.png", sep = ""),
+    width = 27, height = 18, units = "cm",
+    res = 300)
+
+plot(coef_var_tree_discrete_prune)
+text(coef_var_tree_discrete_prune, pretty = 0)
+text(2,935,  bquote(.(pcntg)~" Cross-validation\n predicccion accuracy "))
+
+dev.off()
+
+
 # 
 # library(animation)
 # set.seed(24)
@@ -322,9 +403,9 @@ subset <- curves_description[1:nrow(curves_description) %in% fr ,]
 
 combinations <- combn(1:4, 2)
 
-range_for_assymetry <- c(seq(0, 1, length.out=11), seq(1, 100, length.out=11)[-1])
+range_for_assymetry <- c(seq(0, 1, length.out=11), seq(1, 100, length.out=11)[-c(1, 11)])
 
-range_for_overcrowding <- seq(from=-10, to=15, by=1)
+range_for_overcrowding <- seq(from=-10, to=14, by=1)
 
  png(paste("parameter_posterior_joint_symm_ovcr_", type_simul, ".png", sep="") ,
      width = 18, height = 12, units = "cm",
@@ -335,7 +416,7 @@ layout(mat = matrix(c(1, 1, 2, 2, 3,  3,  4,  4, 5, 5, 6, 6, 0,  7, 7, 0),
                     ncol = 4),
        heights = c(2, 2, 2, 2),
        widths = c(3, 3, 3, 1))
-max_colobar <- 0.1
+
 for (k in 1:ncol(combinations)){
   
   variables_for_joint <- variables[combinations[, k]]
@@ -359,7 +440,7 @@ for (k in 1:ncol(combinations)){
                                        ranges_init = range_this_rep ,
                                        ranges_init_joint = range_this_rep_joint,
                                        n_categ = 10, n_categ_joint = 10)
-  
+  max_colobar <- max(prob_joint$posterior)
   palette <- colorRampPalette(c('#ffffff','#200080'))(10)
   par(c(3, 4, 3, 1) + 0.1)
   image(prob_joint$posterior, col = palette, axes=FALSE,

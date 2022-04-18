@@ -339,13 +339,13 @@ intermediate_pop <- 16
 max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
 
-world_reachablity <- 0.5561866
-max_initial_size <- 0.643868
-n_overcrowding_plants <- 3
-theta <-  28.89622
+world_reachablity <- 10
+max_initial_size <- 0.5
+n_overcrowding_plants <- 10
+theta <-  40
 
 
-seed_value <-34
+seed_value <-32
 set.seed(seed_value)
 
 max_grwth_rt <- 0.1
@@ -357,7 +357,7 @@ y_lim_coefvar <- 0.5
 initial.n <- intermediate_pop + n_overcrowding_plants
 config_found <- c(4,5,9,10,13,16,17,20,25,29,36,49,64)
 mean_coef_compt <-c(NA)
-
+percet_competing_plants <-c(NA)
 
 if (! initial.n %in% config_found){
   print("adj")
@@ -438,11 +438,22 @@ saveGIF({
     par(mar=c(5, 4, 4, 4) + 0.1)
     plot(times, coef_vars, xlim = c(0,30), ylim =c(0, y_lim_coefvar), xlab="t",
          ylab="Coefficient of Variation", lwd=2, type="l", main="")
+    
     par(new = TRUE)
     plot(times, mean_coef_compt, type = "l", axes = FALSE, bty = "n", lwd=2,
          xlab = "", ylab = "", col="darkblue", ylim=c(0,1), xlim=c(0,30))
-    axis(side=4, at = seq(0, 1, length = 3 ), col="darkblue", col.axis ="darkblue" )
-    mtext("Competition", side=4, line=2, col="darkblue")
+
+    axis(side=4, at = seq(0, 1, length = 5 ) )
+    mtext( bquote("Competition ("~phantom(bar(c))~","~phantom(" %")~ ")" ), 
+           side=4, line=3, cex=1.2)
+    mtext( bquote(phantom("Competition (")~bar(c)~phantom(", "~"%"~")")),
+           side=4, line=3, col="darkblue", cex=1.2)
+    mtext( bquote(phantom("Competition ("~bar(c))~phantom(", ")~"%"~ phantom(")")),
+           side=4, line=3, col="magenta", cex=1.2)
+    
+    
+    lines(times, percet_competing_plants, lwd=2, col="magenta")
+    
     
     
     n = nrow(plantcomm)
@@ -585,10 +596,11 @@ saveGIF({
     times <- c(times, t)
     coef_vars <- c(coef_vars, sd(plantcomm$sz)/mean(plantcomm$sz))
     mean_coef_compt <- c(mean_coef_compt, mean(competition_effect))
+    percet_competing_plants <- c(percet_competing_plants, sum(n_in_groups>1)/length(n_in_groups))
     
     
   }
   
 }, movie.name = "example_develop_1.gif", interval = 1, 
-ani.width = 750, ani.height = 500)
+ani.width = 1500, ani.height = 1000, clean = TRUE,  ani.res = 150)
     
