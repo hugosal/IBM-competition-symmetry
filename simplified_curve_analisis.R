@@ -6,6 +6,30 @@ results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_o
 #                              stringsAsFactors = F)
 
 
+############## relationship between competition and variation
+
+data_with_competiton <- results_over_time[results_over_time$mean_competiton < 1, ]
+
+
+png("coefvar_competiton_per_time.png",
+    width = 12, height = 12, units = "cm", res = 300)
+
+plot(data_with_competiton$coef_var, 
+     data_with_competiton$mean_competiton, pch=".", 
+     ylab="Mean competition coefficient", 
+     xlab=" Coefficient of variation",
+     col = heat.colors(31)[as.factor(data_with_competiton$t)])
+
+model_competiton<- lm(mean_competiton~coef_var, 
+                      data=data_with_competiton)
+
+abline(model_competiton, col="black", lwd=1.5)
+
+dev.off()
+
+summary(model_competiton)
+
+plot(lm(mean_competiton~coef_var, data=model_competiton))
 ######## Curve classification, identify what sort of temporal patterns doies
 # the coef var has?
 
@@ -80,7 +104,7 @@ for (q in 1:n_sims){
                                , one_curve[1, 9:14])
   }
 
-table(curves_description$type)
+table(curves_description$type)/sum(table(curves_description$type))*100
 
 
 

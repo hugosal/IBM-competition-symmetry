@@ -141,7 +141,7 @@ busquedas = [
 found=[]
 for caso in busquedas:
 	esta_vez = search_inside_limits(caso[0], ws=ws, level= caso[1], position=caso[2], ya_estan=ya_estan )
-	found=found+esta_vez
+	found = found + esta_vez
 	ya_estan.append([i[0] for i in esta_vez])
 
 
@@ -181,7 +181,7 @@ for n in found:
 	si_queda = True
 	for i in dist_mat_final_test:
 		fila = np.sort(i)
-		if any(np.diff(fila[1:5]) > 0.001):
+		if any(abs(np.diff(fila[1:5])) > 0.001):
 			si_queda = False
 	
 	if si_queda:
