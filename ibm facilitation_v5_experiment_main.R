@@ -294,7 +294,8 @@ results_over_time <- data.frame(re = numeric(n_reps * (timesteps + 1)),
                       size_sd = numeric(n_reps * (timesteps + 1)), 
                       size_skew = numeric(n_reps * (timesteps + 1)),
                       total_biomass = numeric(n_reps * (timesteps + 1)),
-                      mean_competiton = numeric(n_reps * (timesteps + 1)))
+                      mean_competiton = numeric(n_reps * (timesteps + 1)),
+                      t_potential_competitors = numeric(n_reps * (timesteps + 1)))
 counter <- 1
 for (re in 1:nrow(LHS_param)){
   print(paste( "re ", re))
@@ -348,29 +349,36 @@ for (re in 1:nrow(LHS_param)){
     a <- (4 * (max_grwth_rt * ind_grwth_rt))/ max_S
     b <- (4 * (max_grwth_rt * ind_grwth_rt))/ (max_S**2)
 
-  # record data at time 0: before plants start interacting
+    # compute distance between points
+    
+    dx = as.matrix(dist(plantcomm$x,diag=TRUE,upper=TRUE))
+    dx[dx > ws/2] = ws - dx[dx > ws/2]   		### this wraps the interaction effects
+    dy = as.matrix(dist(plantcomm$y,diag=TRUE,upper=TRUE))
+    dy[dy > ws/2] = ws - dy[dy > ws/2]
+    dists = sqrt(dx^2 + dy^2)
+    
+    n <- nrow(plantcomm)
+    
+    critical_distance <- max_S * 2
+    
+    total_potential_competitors <- mean(apply(dists < critical_distance, MARGIN = 1, sum)-1)
+    
+    
+    # record data at time 0: before plants start interacting
     results_over_time[counter, ] <- c(re, 0, 
                                       mean(plantcomm$sz), 
                                       sd(plantcomm$sz), 
                                       e1071::skewness(plantcomm$sz),
                                       sum(pi * plantcomm$sz**2), 
-                                      NA)
+                                      NA,
+                                      total_potential_competitors)
     counter <- counter + 1
   
   for (t in 1:timesteps){
     #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
-
     #print(paste( "t ", t))
-  
-  	n = nrow(plantcomm)
-  	
-  	dx = as.matrix(dist(plantcomm$x,diag=TRUE,upper=TRUE))
-  	dx[dx > ws/2] = ws - dx[dx > ws/2]   		### this wraps the interaction effects
-  	dy = as.matrix(dist(plantcomm$y,diag=TRUE,upper=TRUE))
-  	dy[dy > ws/2] = ws - dy[dy > ws/2]
-  	dists = sqrt(dx^2 + dy^2)
-  
-  	radius_sum <- outer(X = plantcomm$sz, Y = plantcomm$sz, FUN = "+")
+    	radius_sum <- outer(X = plantcomm$sz, 
+  	                    Y = plantcomm$sz, FUN = "+")
     
   	# which plant area of effect overlap
   	disteffect <- dists < radius_sum
@@ -508,7 +516,8 @@ for (re in 1:nrow(LHS_param)){
   	                                  sd(plantcomm$sz), 
   	                                  e1071::skewness(plantcomm$sz),
                                       sum(pi * plantcomm$sz**2), 
-                                      mean(competition_effect))
+                                      mean(competition_effect),
+  	                                  total_potential_competitors)
   	counter <- counter + 1
 
   }
@@ -525,7 +534,7 @@ results_over_time$coef_var <- results_over_time$size_sd/results_over_time$size_m
 
 for (case in unique(results_over_time$re)){
 
-  results_over_time[results_over_time$re==case , 8:13] <- LHS_final[case, 1:6]
+  results_over_time[results_over_time$re==case , 9:14] <- LHS_final[case, 1:6]
 }
 
 

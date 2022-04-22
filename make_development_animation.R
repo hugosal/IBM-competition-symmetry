@@ -339,13 +339,13 @@ intermediate_pop <- 16
 max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
 
-world_reachablity <- 10
-max_initial_size <- 0.5
-n_overcrowding_plants <- 10
+world_reachablity <- 1
+max_initial_size <- 1
+n_overcrowding_plants <- 0
 theta <-  40
 
 
-seed_value <-32
+seed_value <-31
 set.seed(seed_value)
 
 max_grwth_rt <- 0.1
@@ -364,9 +364,6 @@ if (! initial.n %in% config_found){
   initial.n <- config_found[which.min(abs(initial.n - config_found))]
 }
 print(unname(initial.n))
-
-# set plants initial coordinates
-coordinates <- generate_initial_points(N = initial.n, ws = ws)
 
 # set plants initial coordinates
 coordinates <- generate_initial_points(N = initial.n, ws = ws)
