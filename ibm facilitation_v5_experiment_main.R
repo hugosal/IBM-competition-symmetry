@@ -50,8 +50,8 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
                                                     x[2]/255,
                                                     x[3]/255,
                                                     alpha = 0.5)  )
-  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="x", ylab="y",
-       yaxt="n", xaxt="n", yaxs="i", xaxs="i", 
+  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
+       yaxt="n", xaxt="n", yaxs="i", xaxs="i", asp=1,
        xlim = c(0,ws),
        ylim = c(0,ws))
   
@@ -148,13 +148,13 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
     }}
   
   if (! is.null(ws)){
-    polygon(c(-1, ws+5, ws+5,-1), c(0,0,-10,-10), col="white", border=NA)
+    polygon(c(-10, ws+50, ws+50,-1), c(0,0,-100,-100), col="white", border=NA)
     
-    polygon(c(0, 0, -10,-10), c(0,ws+5,-2,-2), col="white" , border=NA)
+    polygon(c(0, 0, -100,-100), c(0,ws+5,-20,-20), col="white" , border=NA)
     
-    polygon(c(ws, ws, ws+5,ws+5), c(-6,ws+5,ws+5,-6), col="white", border=NA)
+    polygon(c(ws, ws, ws+5,ws+5), c(-60,ws+50,ws+50,-60), col="white", border=NA)
     
-    polygon(c(-6, ws+5, ws+5,-1), c(ws,ws,ws+5,ws+5), col="white", border=NA)
+    polygon(c(-60, ws+50, ws+50,-10), c(ws,ws,ws+50,ws+50), col="white", border=NA)
     
     lines(x = c(0, ws), y = c(0, 0)  )
     lines(x = c(0, 0), y = c(ws, 0)  )
@@ -212,12 +212,12 @@ uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
 
 ws <- 20 # world size 
 
-timesteps <- 30   # length of each run
+timesteps <- 50   # length of each run
 
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
 #                           plants will die
 
-n_reps <- 2000 # number of LHS samples
+n_reps <- 900 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -241,8 +241,8 @@ var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
  # print(paste('##################', vars_t_inc))
 
  # number_var_rthis_run <- sum(var_to_include[[vars_t_inc]])
-  consider <- c(world_reachability = TRUE, max_initial_sz = TRUE, n_overcrowding_plants = TRUE,
-  comp_symmetry = TRUE, max_growth_rate = FALSE, indiviudal_var_growth_rate = FALSE)
+  consider <- c(world_reachability = TRUE, max_initial_sz = TRUE, 
+                n_overcrowding_plants = TRUE, comp_symmetry = TRUE)
 
 # consider <- c(world_reachability = var_to_include[[vars_t_inc]][1], 
 #              max_initial_sz = var_to_include[[vars_t_inc]][2], 
@@ -252,33 +252,30 @@ var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
 
 
 null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_plants = 0, 
-  comp_symmetry = 1, max_growth_rate = 0.1, indiviudal_var_growth_rate = 0)
+  comp_symmetry = 1)
 
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 10, 
-                                                           n_samples = n_reps)), # wrl reach, 0 - 1
+                                                           n_samples = n_reps)), # wrl reach,
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = max_S/2, 
                                                            n_samples = n_reps)), # max initial size,
                       sample(floor(uniform_LHS_sample_from_range(lower = -10, 
                                                                  upper = 15,  # lower and upper chosen for rounding error
                                                                  n_samples = n_reps))), # number of overcrowding plants
-                      sample(c(uniform_LHS_sample_from_range(lower = 0, upper = 1,  n_samples = n_reps/2),
-                               uniform_LHS_sample_from_range(lower = 1,  upper = 100, n_samples = n_reps/2))), # competition asymmetry parameter, divided en two ranges
-                      sample(uniform_LHS_sample_from_range(lower = 0.1, 
-                                                           upper = 0.5, 
-                                                           n_samples = n_reps)), # max growth rate
-                      sample(uniform_LHS_sample_from_range(lower = 0, 
-                                                           upper = 0.5, 
-                                                           n_samples = n_reps))),# individual variation in growth rate
+                      sample(c(uniform_LHS_sample_from_range(lower = 0,
+                                                             upper = 1,  
+                                                             n_samples = n_reps/2),
+                               uniform_LHS_sample_from_range(lower = 1,  
+                                                             upper = 100, 
+                                                             n_samples = n_reps/2))) # competition asymmetry parameter, divided en two ranges
+                      ),
                     nrow = n_reps)
 
 colnames(LHS_param) <- c("world_reachability", 
                          "max_initial_sz", 
                          "n_overcrowding_plants",
-                         "comp_symmetry", 
-                         "max_growth_rate",
-                         "indiviudal_var_growth_rate")
+                         "comp_symmetry")
 
 
 for (con in seq_along(consider)){
@@ -292,10 +289,10 @@ results_over_time <- data.frame(re = numeric(n_reps * (timesteps + 1)),
                       t = numeric(n_reps * (timesteps + 1)),
                       size_mean = numeric(n_reps * (timesteps + 1)),
                       size_sd = numeric(n_reps * (timesteps + 1)), 
-                      size_skew = numeric(n_reps * (timesteps + 1)),
                       total_biomass = numeric(n_reps * (timesteps + 1)),
                       mean_competiton = numeric(n_reps * (timesteps + 1)),
-                      t_potential_competitors = numeric(n_reps * (timesteps + 1)))
+                      mean_no_competitors = numeric(n_reps * (timesteps + 1)),
+                      sd_no_competitors = numeric(n_reps * (timesteps + 1)))
 counter <- 1
 for (re in 1:nrow(LHS_param)){
   print(paste( "re ", re))
@@ -304,10 +301,8 @@ for (re in 1:nrow(LHS_param)){
   max_initial_size <- LHS_param[re, 2]
   n_overcrowding_plants <- LHS_param[re, 3]
   theta <- LHS_param[re, 4]
-  max_grwth_rt <- LHS_param[re, 5]
-  indiviudal_var_growth_rate <- LHS_param[re, 6]
   
-  
+  max_grwth_rt <- 0.1
   
   # set population size
   initial.n <- intermediate_pop + n_overcrowding_plants
@@ -336,18 +331,11 @@ for (re in 1:nrow(LHS_param)){
   plantcomm$x <- (plantcomm$x + cos(random_angles) * world_reachablity) %% ws
   plantcomm$y <- (plantcomm$y + sin(random_angles) * world_reachablity) %% ws
   
-   # plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
-   #                main=paste("density", round(n_overcrowding_plants,2),
-   #                           "reachabil", round(world_reachablity,2)))
-  
   # plants have variation in their groth speed, which can be higher tan the preset
   # according to indiviudal_var_growth_rate
-    ind_grwth_rt <- runif(min = 1,
-                          max = 1 + indiviudal_var_growth_rate, 
-                          n = nrow(plantcomm))
     
-    a <- (4 * (max_grwth_rt * ind_grwth_rt))/ max_S
-    b <- (4 * (max_grwth_rt * ind_grwth_rt))/ (max_S**2)
+    a <- (4 * max_grwth_rt)/ max_S
+    b <- (4 * max_grwth_rt)/ (max_S**2)
 
     # compute distance between points
     
@@ -361,17 +349,18 @@ for (re in 1:nrow(LHS_param)){
     
     critical_distance <- max_S * 2
     
-    total_potential_competitors <- mean(apply(dists < critical_distance, MARGIN = 1, sum)-1)
-    
+    mean_potential_competitors <- mean(apply(dists < critical_distance, MARGIN = 1, sum) - 1)
+    sd_potential_competitors <- sd(apply(dists < critical_distance, MARGIN = 1, sum) - 1)
     
     # record data at time 0: before plants start interacting
-    results_over_time[counter, ] <- c(re, 0, 
+    results_over_time[counter, ] <- c(re, 
+                                      0, 
                                       mean(plantcomm$sz), 
                                       sd(plantcomm$sz), 
-                                      e1071::skewness(plantcomm$sz),
                                       sum(pi * plantcomm$sz**2), 
                                       NA,
-                                      total_potential_competitors)
+                                      mean_potential_competitors,
+                                      sd_potential_competitors)
     counter <- counter + 1
   
   for (t in 1:timesteps){
@@ -395,7 +384,7 @@ for (re in 1:nrow(LHS_param)){
   	# intersections areas. Otherwise, it will stay the same size, computing areas
   	# will be irrelevant and thus it is omitted
   	
-  	#cant_grow_more <- which(plantcomm$sz >= (max_S * ind_s_var))
+  	cant_grow_more <- which(plantcomm$sz >= max_S )
   		
   	# initiate vector of resources obtained with the area of effect of each plant
   	resources_obtained_p_ind <- plantcomm$sz**2 * pi
@@ -404,12 +393,12 @@ for (re in 1:nrow(LHS_param)){
   
   	for(j in intersect_to_compute){
   	  
-  	  # if (j %in% cant_grow_more){
-  	  #   if((a[j] * plantcomm$sz[j]) - (b[j] * plantcomm$sz[j]**2) > 1e-6){
-  	  #     stop("Algo mal con optimizacion de crecimiento")
-  	  #   }
-  	  #   next
-  	  # }
+  	  if (j %in% cant_grow_more){
+  	    if((a * plantcomm$sz[j]) - (b * plantcomm$sz[j]**2) > 1e-6){
+  	      stop("Algo mal con optimizacion de crecimiento")
+  	    }
+  	    next
+  	  }
   	  
   	  names_original_plantcomm <- which(disteffect[j, ])
   
@@ -511,13 +500,14 @@ for (re in 1:nrow(LHS_param)){
   	
   	####################
 
-  	results_over_time[counter, ] <- c(re, t, 
+  	results_over_time[counter, ] <- c(re, 
+  	                                  t, 
   	                                  mean(plantcomm$sz), 
   	                                  sd(plantcomm$sz), 
-  	                                  e1071::skewness(plantcomm$sz),
                                       sum(pi * plantcomm$sz**2), 
                                       mean(competition_effect),
-  	                                  total_potential_competitors)
+  	                                  mean_potential_competitors,
+  	                                  sd_potential_competitors)
   	counter <- counter + 1
 
   }
@@ -526,21 +516,24 @@ for (re in 1:nrow(LHS_param)){
 LHS_final <- as.data.frame(LHS_param)
 
 results_over_time <- cbind(results_over_time,
-                           data.frame(matrix(ncol = length(colnames(LHS_final[1, 1:6])),
+                           data.frame(matrix(ncol = length(colnames(LHS_final[1, 1:4])),
                                             nrow = nrow(results_over_time),
-                                            dimnames = list(NULL, colnames(LHS_final[1, 1:6])))))
+                                            dimnames = list(NULL, colnames(LHS_final[1, 1:4])))))
 
 results_over_time$coef_var <- results_over_time$size_sd/results_over_time$size_mean
 
 for (case in unique(results_over_time$re)){
 
-  results_over_time[results_over_time$re==case , 9:14] <- LHS_final[case, 1:6]
+  results_over_time[results_over_time$re==case , 9:12] <- LHS_final[case, 1:4]
 }
 
 
 # write.csv(results_over_time, file = paste("tree", number_var_rthis_run,"_variables_",paste(names(consider)[consider], collapse= "_"),
 #  "_",n_reps, "_reps.csv", sep = ""))
 # }
-write.csv(results_over_time, file = paste("LHS_results_", paste(names(consider)[consider], collapse= "_"),"_",n_reps, "_reps_", ws, "ws_", seed_value,"_seed.csv", sep = ""))
+write.csv(results_over_time, 
+          file = paste("IBM_res_", paste(names(consider)[consider], collapse= "_"),
+                       "_", n_reps, "_reps_", ws, "ws_", timesteps, "tsteps_", 
+                       seed_value, "_seed.csv", sep = ""))
 print("Success")
 

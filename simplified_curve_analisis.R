@@ -1,5 +1,5 @@
 #library(animation)
-results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2000_reps_20ws_26_seed.csv",
+results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_4_reps_20ws_50tsteps_23_seed.csv",
                               stringsAsFactors = F)
 
 # results_over_time <- read.csv("tree_steps/tree4_variables_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
@@ -29,7 +29,7 @@ dev.off()
 
 summary(model_competiton)
 
-plot(lm(mean_competiton~coef_var, data=model_competiton))
+plot(model_competiton)
 ######## Curve classification, identify what sort of temporal patterns doies
 # the coef var has?
 
@@ -42,7 +42,7 @@ clasfify_Curve <- function(cvar, t, full_classification = TRUE){
   final_cvar <- cvar[final_t]
   initial_cvar <- cvar[init_t]
   
-  significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-3
+  significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-5
   
   if (all(!(significativos[-1]))) {return("flat")}
   
@@ -68,9 +68,9 @@ clasfify_Curve <- function(cvar, t, full_classification = TRUE){
     #inflpts <- if (length(inflpts)>0) inflpts[seq(from= 1, to=length(inflpts), by=2)]
 
   if (full_classification) {
-    for (i in inflpts[1]){
-      #type_curve <- paste(type_curve, if (i) "_convex" else "_concave", sep="")}
-      type_curve <- paste(type_curve, if (i) "_c" else "_c", sep="")}
+    for (i in inflpts){
+      type_curve <- paste(type_curve, if (i) "_convex" else "_concave", sep="")}
+      #type_curve <- paste(type_curve, if (i) "_c" else "_c", sep="")}
   }
 
   type_curve
@@ -88,12 +88,13 @@ n_sims <- max(results_over_time$re)
 
 curves_description <- data.frame(
   type = character(n_sims),
+  mean_potential_competitors  = numeric(n_sims),
+  sd_potential_competitors  = numeric(n_sims),
   world_reachability= numeric(n_sims),
   max_initial_sz = numeric(n_sims),
   overcrowding = numeric(n_sims),
   comp_symmetry= numeric(n_sims),
-  max_growth_rate= numeric(n_sims),
-  indiviudal_var_growth_rate= numeric(n_sims), stringsAsFactors = F)
+  stringsAsFactors = F)
 
 for (q in 1:n_sims){
   one_curve <- results_over_time[results_over_time$re==q, ]
@@ -101,7 +102,7 @@ for (q in 1:n_sims){
   curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
                                               t = one_curve$t, 
                                               full_classification = T)
-                               , one_curve[1, 9:14])
+                               , one_curve[1, 8:13])
   }
 
 table(curves_description$type)/sum(table(curves_description$type))*100
@@ -113,9 +114,10 @@ table(curves_description$type)/sum(table(curves_description$type))*100
 #  png("coefvar_per_biomass_dec_c.png", 
 #      width = 12, height = 12, units = "cm",
 #      res = 300)
- plot(1, xlim=c(0,30), ylim=c(0,0.5), xlab="t", ylab="Coef. Var")
+ plot(1, xlim=c(0,max(results_over_time$t)), ylim=c(0.05,0.3), 
+      xlab="t", ylab="Coef. Var")
  hu<-1
- simuls <- which(curves_description$type == 'inc')[15:30]
+ simuls <- which(curves_description$type == 'inc_convex')[1:10]
  for (fre in simuls){
    cvar <- results_over_time$coef_var[results_over_time$re==fre]
    t <- results_over_time$t[results_over_time$re==fre]
@@ -148,7 +150,8 @@ curves_description_frequents <- curves_description[curves_description$type %in% 
 # re train with cross validation
 set.seed(26)
 
-test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, replace = F)
+test_index <- sample(x = 1:nrow(curves_description_frequents), 
+                     size = 1/3*nrow(curves_description_frequents), replace = F)
 # test_index <-c(
 #   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
 #   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
@@ -159,9 +162,9 @@ test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, repl
 train <- curves_description_frequents[test_index, ]
 test <- curves_description_frequents[-test_index, ]
 
-coef_var_tree_discrete <- tree(type_inc_dec ~ world_reachability+
-                                 max_initial_sz+
-                                 overcrowding+
+coef_var_tree_discrete <- tree(type~ mean_potential_competitors+
+                                 max_initial_sz +
+                                 overcrowding +
                                  comp_symmetry,
                                data=train)
 
@@ -171,7 +174,7 @@ text(coef_var_tree_discrete)
 summary(coef_var_tree_discrete)
 
 #accuracy of first model
-sum(test$type_inc_dec == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
+sum(test$type == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
 
 # to know what type of simulations are harder to predict
 
@@ -188,7 +191,7 @@ coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
 summary(coef_var_tree_discrete_prune)
 
 # accudary of second
-pcntg <- sum(test$type_inc_dec == predict(coef_var_tree_discrete_prune, 
+pcntg <- sum(test$type == predict(coef_var_tree_discrete_prune, 
                                           test, type="class"))/nrow(test)*100
 pcntg <- paste(round(pcntg, 1),"%", sep="" )
 
@@ -197,21 +200,20 @@ coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$
 coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
 coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
 coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
+coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "t_potential_competitors", replacement = "Potential competitors")
 
 
 levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dec.",  "Inc.")
 
-png(paste("classifciation_tree_inc_dec.png", sep = ""),
+png(paste("classifciation_tree_detail_description.png", sep = ""),
     width = 27, height = 18, units = "cm",
     res = 300)
 
 plot(coef_var_tree_discrete_prune)
 text(coef_var_tree_discrete_prune, pretty = 0)
 
-text(3,850,  bquote(.(pcntg)~" Cross-validation\n predicccion accuracy "))
-
+text(7.2,3000,  bquote(.(pcntg)~" Cross-validation\n predicccion accuracy "))
 dev.off()
-
 ############# repeat for c or no c
 
 set.seed(25)
