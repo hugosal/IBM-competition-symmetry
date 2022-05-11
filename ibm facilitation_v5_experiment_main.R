@@ -210,14 +210,14 @@ uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
                                          max = limits[x + 1])})
 }
 
-ws <- 20 # world size 
+ws <- 20 # wor30 size 
 
 timesteps <- 50   # length of each run
 
 # slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
-#                           plants will die
+#                           plan20s will die
 
-n_reps <- 1500 # number of LHS samples
+n_reps <- 900 # number of LHS samples
 
   
 # The  number of plants of a population that would have just enough resources is
@@ -268,7 +268,7 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                                                              n_samples = n_reps/2),
                                uniform_LHS_sample_from_range(lower = 1,  
                                                              upper = 100, 
-                                                             n_samples = n_reps/2))) # competition asymmetry parameter, divided in two ranges
+                                                             n_samples = n_reps/2))) # competition asymmetry parameter, divided en two ranges
                       ),
                     nrow = n_reps)
 

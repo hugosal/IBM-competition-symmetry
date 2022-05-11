@@ -43,9 +43,9 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
                                                     x[3]/255,
                                                     alpha = 0.5)  )
   plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
-       yaxt="n", xaxt="n", yaxs="i", xaxs="i", 
+       yaxt="n", xaxt="n", yaxs="i", xaxs="i",
        xlim = c(0,ws),
-       ylim = c(0,ws), asp=1)
+       ylim = c(0,ws), asp=1, bty="n")
   
   
   
@@ -140,13 +140,13 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
     }}
   
   if (! is.null(ws)){
-    polygon(c(-1, ws+5, ws+5,-1), c(0,0,-10,-10), col="white", border=NA)
+    polygon(c(-10, ws+5, ws+5,-10), c(0,0,-10,-10), col="white", border=NA)
     
     polygon(c(0, 0, -10,-10), c(0,ws+5,-2,-2), col="white" , border=NA)
     
-    polygon(c(ws, ws, ws+5,ws+5), c(-6,ws+5,ws+5,-6), col="white", border=NA)
+    polygon(c(ws, ws, ws+5,ws+5), c(-60,ws+5,ws+5,-60), col="white", border=NA)
     
-    polygon(c(-6, ws+5, ws+5,-1), c(ws,ws,ws+5,ws+5), col="white", border=NA)
+    polygon(c(-60, ws+5, ws+5,-10), c(ws,ws,ws+5,ws+5), col="white", border=NA)
     
     lines(x = c(0, ws), y = c(0, 0)  )
     lines(x = c(0, 0), y = c(ws, 0)  )
@@ -326,23 +326,23 @@ generate_initial_points <- function(N, ws){
 
 ws <- 20 # world size 
 
-timesteps <- 30   # length of each run
+timesteps <- 5   # length of each run
 
 slf_thinning_limit <- -1 # if competition effect is stronger or equal to this
 #                           plants will die
 
 
 # The  number of plants of a population that would have just enough resources is
-intermediate_pop <- 16
+intermediate_pop <- 4
 
 # The maximum size of plants such that they have just enough resources is
-max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
+max_S <- 8#ws/(sqrt(intermediate_pop) * 2)  # ?????????asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
 
 
-world_reachablity <- 1
-max_initial_size <- 1
+world_reachablity <- 0
+max_initial_size <- 2
 n_overcrowding_plants <- 0
-theta <-  40
+theta <-  1
 
 
 seed_value <-31
@@ -354,10 +354,9 @@ indiviudal_var_growth_rate <- 0
 y_lim_coefvar <- 0.5
 
 
-initial.n <- intermediate_pop + n_overcrowding_plants
+initial.n <- 2#intermediate_pop + n_overcrowding_plants
 config_found <- c(4,5,9,10,13,16,17,20,25,29,36,49,64)
-mean_coef_compt <-c(NA)
-percet_competing_plants <-c(NA)
+
 
 if (! initial.n %in% config_found){
   print("adj")
@@ -369,10 +368,10 @@ print(unname(initial.n))
 coordinates <- generate_initial_points(N = initial.n, ws = ws)
 
 plantcomm = data.frame(
-  x = coordinates[, 1],
-  y = coordinates[, 2],
-  ft = 1,
-  sz = runif(initial.n, min = 0.5, max = max_initial_size))
+  x = c(7, 13),#coordinates[, 1],
+  y = c(10, 10),#coordinates[, 2],
+  ft = c(1, 2),
+  sz = c(3, 5))#runif(initial.n, min = 0.5, max = max_initial_size))
 
 dead_plants <- data.frame(x = numeric(),
                           y = numeric(),
@@ -386,9 +385,7 @@ random_angles <- runif(nrow(plantcomm),
 plantcomm$x <- (plantcomm$x + cos(random_angles) * world_reachablity) %% ws
 plantcomm$y <- (plantcomm$y + sin(random_angles) * world_reachablity) %% ws
 
-# plot_plantcomm(plantcomm, numbers = TRUE, ws = ws,
-#                main=paste("density", round(pop_density,2),
-#                           "reachabil", round(world_reachablity,2)))
+# plot_plantcomm(plantcomm, numbers = TRUE, ws = ws)
 
 ind_s_var <- runif(min = 1, 
                    max = 1 + indiviudal_var_growth_rate,
@@ -401,9 +398,17 @@ a <- (4 * (max_grwth_rt * ind_grwth_rt))/(max_S * ind_s_var)
 b <- (4 * (max_grwth_rt * ind_grwth_rt))/((max_S * ind_s_var)**2)
 
 times <- c(0)
+mean_coef_compt <-c(NA)
+percet_competing_plants <-c(NA)
 coef_vars <- c(sd(plantcomm$sz)/mean(plantcomm$sz))
 
-
+png("two_plants_example.png",
+    width = 12, height = 12, units = "cm",
+    res = 300)
+par(oma=c(0,0,0,0))
+plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main='')
+dev.off()
+frfr
 
 saveGIF({
   for (t in 1:timesteps){
@@ -412,9 +417,10 @@ saveGIF({
                         ncol = 2),
            heights = c(2, 1, 1),
            widths = c(2, 1, 1))
+    
     plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
     if (nrow(dead_plants)>0){
-    plot_plantcomm_deads(dead_plants, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
+    #plot_plantcomm_deads(dead_plants, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
     }  
     sign_ovrcrwd <- if (n_overcrowding_plants > 0) "+" else if(n_overcrowding_plants < 0) "-" else " "
     
@@ -433,12 +439,12 @@ saveGIF({
     
     print(paste( "t ", t))
     par(mar=c(5, 4, 4, 4) + 0.1)
-    plot(times, coef_vars, xlim = c(0,30), ylim =c(0, y_lim_coefvar), xlab="t",
+    plot(times, coef_vars, xlim = c(0, timesteps), ylim =c(0, y_lim_coefvar), xlab="t",
          ylab="Coefficient of Variation", lwd=2, type="l", main="")
     
     par(new = TRUE)
     plot(times, mean_coef_compt, type = "l", axes = FALSE, bty = "n", lwd=2,
-         xlab = "", ylab = "", col="darkblue", ylim=c(0,1), xlim=c(0,30))
+         xlab = "", ylab = "", col="darkblue", ylim=c(0,1), xlim=c(0,timesteps))
 
     axis(side=4, at = seq(0, 1, length = 5 ) )
     mtext( bquote("Competition ("~phantom(bar(c))~","~phantom(" %")~ ")" ), 
@@ -448,9 +454,8 @@ saveGIF({
     mtext( bquote(phantom("Competition ("~bar(c))~phantom(", ")~"%"~ phantom(")")),
            side=4, line=3, col="magenta", cex=1.2)
     
-    
     lines(times, percet_competing_plants, lwd=2, col="magenta")
-    
+    par(mar = c(5, 4, 4, 2) + 0.1)
     
     
     n = nrow(plantcomm)
@@ -598,6 +603,6 @@ saveGIF({
     
   }
   
-}, movie.name = "example_develop_1.gif", interval = 1, 
+}, movie.name = "example_develop_symmetryc.gif", interval = 1, 
 ani.width = 1500, ani.height = 1000, clean = TRUE,  ani.res = 150)
     

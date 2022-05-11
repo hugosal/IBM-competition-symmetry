@@ -1,13 +1,20 @@
 # Script to model and predict variation tren only for the next timestep
 # of simluations
 library(tree)
-results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_1500_reps_20ws_50tsteps_23_seed.csv",
+results_over_time <- read.csv("IBM_res_ext_symworld_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_1500_reps_20ws_50tsteps_23_seed.csv",
                               stringsAsFactors = F)
+
+
+plot(y = results_over_time$mean_competiton, 
+     x = results_over_time$coef_var, pch=".", 
+     ylab = "Mean competition coefficient", 
+     xlab = "Coefficient of variation",
+     col = heat.colors(length(unique(results_over_time$t)))[as.factor(results_over_time$t)])
 
 
 set.seed(26)
 train_index <- sample(unique(results_over_time$re), 
-                      size =length(unique(results_over_time$re))*2/3, 
+                      size = length(unique(results_over_time$re))*2/3, 
                       replace = F)
 
 
@@ -17,8 +24,10 @@ testing_repetitions <- results_over_time[!results_over_time$re %in% train_index,
 ##############################################
 # adjust model that predicts final size
 
+time_of_interest <- max(trainin_repetitions$t)
+
 only_last <- trainin_repetitions[
-  trainin_repetitions$t==max(trainin_repetitions$t),]
+  trainin_repetitions$t == time_of_interest, ]
 
 only_last$comp_symmetry_factor <- factor(sapply(only_last$comp_symmetry, 
                                          function(x) if (x>1) "Assymetric" else "Symmetric"))
@@ -26,7 +35,7 @@ only_last$comp_symmetry_factor <- factor(sapply(only_last$comp_symmetry,
 testing_repetitions$comp_symmetry_factor <- factor(sapply(testing_repetitions$comp_symmetry, 
                                                 function(x) if (x>1) "Assymetric" else "Symmetric"))
 
-testing_repetitions_final <- testing_repetitions[testing_repetitions$t==max(trainin_repetitions$t),]
+testing_repetitions_final <- testing_repetitions[testing_repetitions$t == time_of_interest, ]
 
 
 # multiple linear regressio bayesian model
@@ -39,24 +48,28 @@ reg_asym_mult <- bayes.lm(formula = coef_var ~ mean_no_competitors * sd_no_compe
 
 x_mean <- colMeans(reg_asym_mult$x[, c(2, 3) ]) 
 
-xes <- seq(from=0,to=7, length.out=20)
-yes <- seq(from=0,to=3, length.out=20)
-z <-outer(X = xes, Y = yes,FUN = Vectorize(function(x, y){
-        t(as.matrix(reg_asym_mult$coefficients)) %*% matrix(c(1, x, y, x*y), nrow = 4)
-
-      }  ))
-for(ki in seq(0, 360, length.out=30)){
-pespective <- persp(xes, yes, z, theta = ki, phi = -2, col = "red", shade = 0.5, 
-                    ticktype ="detailed" , zlim = c(0, 0.5))
-
-points( trans3d(x = testing_repetitions_final$mean_no_competitors,
-                y = testing_repetitions_final$sd_no_competitors,
-                z = testing_repetitions_final$coef_var, 
-                pespective),
-        pch=18,  
-        #col=red2blue(n = 8)[color_BF], 
-        col =  c("red", "blue") [testing_repetitions_final$comp_symmetry_factor], 
-        cex=0.7)}
+# xes <- seq(from=0,to=7, length.out=20)
+# yes <- seq(from=0,to=3, length.out=20)
+# z <-outer(X = xes, Y = yes,FUN = Vectorize(function(x, y){
+#         t(as.matrix(reg_asym_mult$coefficients)) %*% matrix(c(1, x, y, x*y), nrow = 4)
+# 
+#       }  ))
+# saveGIF({
+# for(ki in seq(0, 360, length.out=30)){
+# pespective <- persp(xes, yes, z, theta = ki, phi = -2, col = "red", shade = 0.5, 
+#                     zlim = c(0, 0.5), xlab = "Mean. comp",
+#                     ylab = "SD. comp", zlab = "Final Coef. Var.")
+# 
+# points( trans3d(x = testing_repetitions_final$mean_no_competitors,
+#                 y = testing_repetitions_final$sd_no_competitors,
+#                 z = testing_repetitions_final$coef_var, 
+#                 pespective),
+#         pch=18,  
+#         #col=red2blue(n = 8)[color_BF], 
+#         col =  c("red", "blue") [testing_repetitions_final$comp_symmetry_factor], 
+#         cex=0.7)}
+# }, movie.name = "posteriormean_asym.gif", interval = 1, 
+# ani.width = 1500, ani.height = 1000, clean = TRUE,  ani.res = 150)
 
 x_mean <- colMeans(reg_asym_mult$x[, c(2, 3) ]) 
 
@@ -92,19 +105,22 @@ reg_sym_mult <- bayes.lm(formula = coef_var ~ mean_no_competitors*sd_no_competit
                          center = F,
                           x = T, y = T, sigma = F, model = T)
 
-zasym <-outer(X = xes, Y = yes, FUN = Vectorize(function(x, y){
-  t(as.matrix(reg_sym_mult$coefficients)) %*% matrix(c(1, x, y, x*y), nrow = 4)
-  } ))
-
-for(ki in seq(0, 360, length.out=30)){
-  pespective <- persp(xes, yes, zasym, theta = ki, phi = -2, col = "blue", shade = 0.5, 
-                      ticktype ="detailed" , zlim = c(0, 0.5))
-  points( trans3d(x = testing_repetitions_final$mean_no_competitors,
-                  y = testing_repetitions_final$sd_no_competitors,
-                  z = testing_repetitions_final$coef_var, 
-                  pespective),
-          pch=18,  col =  c("red", "blue") [testing_repetitions_final$comp_symmetry_factor], 
-          cex=0.7)}
+# zasym <-outer(X = xes, Y = yes, FUN = Vectorize(function(x, y){
+#   t(as.matrix(reg_sym_mult$coefficients)) %*% matrix(c(1, x, y, x*y), nrow = 4)
+#   } ))
+# saveGIF({
+# for(ki in seq(0, 360, length.out=30)){
+#   pespective <- persp(xes, yes, zasym, theta = ki, phi = -2, col = "blue", shade = 0.5, 
+#                       zlim = c(0, 0.5), xlab = "Mean. comp",
+#                       ylab = "SD. comp", zlab = "Final Coef. Var.")
+#   points( trans3d(x = testing_repetitions_final$mean_no_competitors,
+#                   y = testing_repetitions_final$sd_no_competitors,
+#                   z = testing_repetitions_final$coef_var, 
+#                   pespective),
+#           pch=18,  col =  c("red", "blue") [testing_repetitions_final$comp_symmetry_factor], 
+#           cex=0.7)}
+# }, movie.name = "posteriormean_sym.gif", interval = 1, 
+# ani.width = 1500, ani.height = 1000, clean = TRUE,  ani.res = 150)
 
 
 x_mean_sym <- colMeans(reg_sym_mult$x[, c(2, 3) ]) 
@@ -129,11 +145,6 @@ sigmasym2 <- c(sigmasym2) + apply(x_new, MARGIN = 1,
                                    t(c(xxx, xxx[2]*xxx[3] )) %*% solve(t(XX) %*% XX) %*% c(xxx, xxx[2]*xxx[3] )
                                  } )
 
-
-
-testing_repetitions_final$comp_symmetry_factor[case_want]
-
-
 likelihood_symm <- extraDistr::dlst(x = testing_repetitions_final$coef_var, 
                                     df = df_sym, 
                                     mu = mean_sym, sigma = sqrt(sigmasym2) )
@@ -144,14 +155,17 @@ sum(testing_repetitions_final$comp_symmetry_factor[BF > 1]=="Symmetric")/sum(BF 
 
 sum(testing_repetitions_final$comp_symmetry_factor[BF < 1]=="Assymetric")/sum(BF < 1)*100
 
-for (case_want in 1:20){
-curve(from= 0, to = 0.5, extraDistr::dlst(x, df = df_asym, mu = mean_sym[case_want],
+gthjklbgy
+
+
+
+for (case_want in c(6)){
+curve(from= 0, to = 0.5, extraDistr::dlst(x, df = df_sym, mu = mean_sym[case_want],
                                           sigma = sqrt(sigmasym2[case_want])), col="blue",
-      main=case_want, ylab = "", xlab = "", ylim=c(0, 5))
+      main=case_want, ylab = "Probability density", xlab = "Final Coef. Var.", ylim=c(0, 5))
 # curve(from= 0, to = 2, dnorm(x, mean = mean_sym[case_want], 
 #                              sd = sqrt(sigmasym2[case_want])),col = 'blue'  , add=T, lty=2)
-abline(v = testing_repetitions_final$coef_var[case_want])
-curve(from= 0, to = 0.5, extraDistr::dlst(x, df = df_asym, mu = mean_asym[5], 
+curve(from= 0, to = 0.5, extraDistr::dlst(x, df = df_asym, mu = mean_asym[case_want],
                                           sigma = sqrt(sigmaasym2[case_want])), add=T, col="red" )
 # curve(from= 0, to = 2, dnorm(x, mean = mean_asym[5], sd = sqrt(sigmaasym2[case_want])),
 #       col = 'red'  , add=T, lty=2)
@@ -159,13 +173,69 @@ abline(v = testing_repetitions_final$coef_var[case_want],
        col = c("red","blue")[testing_repetitions_final$comp_symmetry_factor[case_want]], lwd=2)
 
 points(testing_repetitions_final$coef_var[case_want], 0,
-       pch = if (testing_repetitions_final$comp_symmetry_factor[case_want] == "Symmetric" &
-                 BF[case_want] > 1) 19 else 4, col = "black", cex=4)
+       pch = if ((testing_repetitions_final$comp_symmetry_factor[case_want] == "Symmetric" &
+                 BF[case_want] > 1) |
+                 (testing_repetitions_final$comp_symmetry_factor[case_want] == "Assymetric" &
+                                      BF[case_want] < 1 ) )  19 else 4, col = "black", cex=4)
 
 legend("topright", legend = c("Asymmetric", "Symmetric"), 
        fill = c("red","blue"), cex=0.8)
 }
 
+
+# png("fimnal_coefvar_per_meancomp_symmetry.png",
+#     width = 24, height = 12, units = "cm",
+#     res = 300)
+# par(mfrow=c(1,2))
+# plot(x = only_last$mean_no_competitors, y = only_last$coef_v# png("fimnal_coefvar_per_meancomp_symmetry.png",
+#     width = 24, height = 12, units = "cm",
+#     res = 300)
+# par(mfrow=c(1,2))
+# plot(x = only_last$mean_no_competitors, y = only_last$coef_var,
+#      #col= rgb(blue=only_last$sd_no_competitors/max(only_last$sd_no_competitors), green = 0,red = 0),
+#      #col= rgb(blue=only_last$max_initial_sz-0.5/max(only_last$max_initial_sz), green = 0,red = 0),
+#      col = c("red", "blue")[only_last$comp_symmetry_factor],
+#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)],
+#      pch=20, cex=0.8, xlab="Mean Comp.",
+#      ylab="Final coefficient of variation" )
+# 
+# legend("topleft", legend = c("Asymmetric", "Symmetric"),
+#        fill = c("red","blue"), cex=0.8)
+# 
+# plot(x = only_last$sd_no_competitors, y = only_last$coef_var,
+#      #col= rgb(blue=only_last$sd_no_competitors/max(only_last$sd_no_competitors), green = 0,red = 0),
+#      #col= rgb(blue=only_last$max_initial_sz-0.5/max(only_last$max_initial_sz), green = 0,red = 0),
+#      col = c("red", "blue")[only_last$comp_symmetry_factor],
+#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)],
+#      pch=20, cex=0.8, xlab="SD Comp.",
+#      ylab="Final coefficient of variation" )
+# legend("topleft", legend = c("Asymmetric", "Symmetric"),
+#        fill = c("red","blue"), cex=0.8)
+# #abline(model_final_coefvar, lwd=2, lty=1, col="red")
+# 
+# dev.off()ar,
+#      #col= rgb(blue=only_last$sd_no_competitors/max(only_last$sd_no_competitors), green = 0,red = 0),
+#      #col= rgb(blue=only_last$max_initial_sz-0.5/max(only_last$max_initial_sz), green = 0,red = 0),
+#      col = c("red", "blue")[only_last$comp_symmetry_factor],
+#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)],
+#      pch=20, cex=0.8, xlab="Mean Comp.",
+#      ylab="Final coefficient of variation" )
+# 
+# legend("topleft", legend = c("Asymmetric", "Symmetric"),
+#        fill = c("red","blue"), cex=0.8)
+# 
+# plot(x = only_last$sd_no_competitors, y = only_last$coef_var,
+#      #col= rgb(blue=only_last$sd_no_competitors/max(only_last$sd_no_competitors), green = 0,red = 0),
+#      #col= rgb(blue=only_last$max_initial_sz-0.5/max(only_last$max_initial_sz), green = 0,red = 0),
+#      col = c("red", "blue")[only_last$comp_symmetry_factor],
+#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)],
+#      pch=20, cex=0.8, xlab="SD Comp.",
+#      ylab="Final coefficient of variation" )
+# legend("topleft", legend = c("Asymmetric", "Symmetric"),
+#        fill = c("red","blue"), cex=0.8)
+# #abline(model_final_coefvar, lwd=2, lty=1, col="red")
+# 
+# dev.off() = df_asym, mu = mean_asym[5], 
 
 
 # cuales fallan mas
@@ -181,23 +251,33 @@ hist(testing_repetitions_final$sd_no_competitors[false_asym])
 model_final_coefvar <- lm(coef_var~mean_no_competitors*sd_no_competitors-1,
                           data=only_last)
  summary(model_final_coefvar)
-# # png("fimnal_coefvar_per_meancomp_symmetry.png",
-# #     width = 12, height = 12, units = "cm",
-# #     res = 300)
-# plot(x = only_last$mean_no_competitors, y = only_last$coef_var, 
+# png("fimnal_coefvar_per_meancomp_symmetry.png",
+#     width = 24, height = 12, units = "cm",
+#     res = 300)
+# par(mfrow=c(1,2))
+# plot(x = only_last$mean_no_competitors, y = only_last$coef_var,
 #      #col= rgb(blue=only_last$sd_no_competitors/max(only_last$sd_no_competitors), green = 0,red = 0),
 #      #col= rgb(blue=only_last$max_initial_sz-0.5/max(only_last$max_initial_sz), green = 0,red = 0),
 #      col = c("red", "blue")[only_last$comp_symmetry_factor],
-#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)], 
-#      pch=20, cex=0.8, xlab="Mean Comp.", 
+#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)],
+#      pch=20, cex=0.8, xlab="Mean Comp.",
 #      ylab="Final coefficient of variation" )
 # 
-# legend("topleft", legend = c("Asymmetric", "Symmetric"), 
+# legend("topleft", legend = c("Asymmetric", "Symmetric"),
 #        fill = c("red","blue"), cex=0.8)
 # 
+# plot(x = only_last$sd_no_competitors, y = only_last$coef_var,
+#      #col= rgb(blue=only_last$sd_no_competitors/max(only_last$sd_no_competitors), green = 0,red = 0),
+#      #col= rgb(blue=only_last$max_initial_sz-0.5/max(only_last$max_initial_sz), green = 0,red = 0),
+#      col = c("red", "blue")[only_last$comp_symmetry_factor],
+#      #col=topo.colors(25)[as.factor(only_last$n_overcrowding_plants)],
+#      pch=20, cex=0.8, xlab="SD Comp.",
+#      ylab="Final coefficient of variation" )
+# legend("topleft", legend = c("Asymmetric", "Symmetric"),
+#        fill = c("red","blue"), cex=0.8)
 # #abline(model_final_coefvar, lwd=2, lty=1, col="red")
-
-#dev.off()
+# 
+# dev.off()
 
 reg_asym <- bayes.lin.reg(y = only_last$coef_var[only_last$comp_symmetry_factor=="Assymetric"],
                           x = only_last$mean_no_competitors[only_last$comp_symmetry_factor=="Assymetric"],
