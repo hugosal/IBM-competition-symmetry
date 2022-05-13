@@ -5,15 +5,23 @@ results_over_time <- read.csv("IBM_res_ext_symworld_reachability_max_initial_sz_
                               stringsAsFactors = F)
 
 
-plot(y = results_over_time$mean_competiton, 
-     x = results_over_time$coef_var, pch=".", 
-     ylab = "Mean competition coefficient", 
-     xlab = "Coefficient of variation",
-     col = heat.colors(length(unique(results_over_time$t)))[as.factor(results_over_time$t)])
+# plot(y = results_over_time$mean_competiton, 
+#      x = results_over_time$coef_var, pch=".", 
+#      ylab = "Mean competition coefficient", 
+#      xlab = "Coefficient of variation",
+#      col = heat.colors(length(unique(results_over_time$t)))[as.factor(results_over_time$t)])
 
 
 set.seed(26)
-train_index <- sample(unique(results_over_time$re), 
+time_limits <- c(1, 5, 10, 20, 30, 40, 50)
+res_acc_days <- data.frame(acc_sym = numeric(length(time_limits)),
+           mean_bf_sym = numeric(length(time_limits)),
+           acc_asym = numeric(length(time_limits)),
+           meanbf_asym = numeric(length(time_limits)))
+counter_days <- 1
+for (t_lim in time_limits){
+
+  train_index <- sample(unique(results_over_time$re), 
                       size = length(unique(results_over_time$re))*2/3, 
                       replace = F)
 
@@ -24,7 +32,7 @@ testing_repetitions <- results_over_time[!results_over_time$re %in% train_index,
 ##############################################
 # adjust model that predicts final size
 
-time_of_interest <- max(trainin_repetitions$t)
+time_of_interest <- t_lim # max(trainin_repetitions$t)
 
 only_last <- trainin_repetitions[
   trainin_repetitions$t == time_of_interest, ]
@@ -151,10 +159,18 @@ likelihood_symm <- extraDistr::dlst(x = testing_repetitions_final$coef_var,
 
 BF <- likelihood_symm/likelihood_asymm
 
-sum(testing_repetitions_final$comp_symmetry_factor[BF > 1]=="Symmetric")/sum(BF > 1)*100
+res_acc_days[counter_days, 1] <- sum(testing_repetitions_final$comp_symmetry_factor == "Symmetric" & BF > 1 )/sum(BF > 1)*100
 
-sum(testing_repetitions_final$comp_symmetry_factor[BF < 1]=="Assymetric")/sum(BF < 1)*100
+res_acc_days[counter_days, 2] <- mean(BF[testing_repetitions_final$comp_symmetry_factor == "Symmetric" & BF > 1 ])
 
+res_acc_days[counter_days, 3] <- sum(testing_repetitions_final$comp_symmetry_factor == "Assymetric" & BF < 1)/sum(BF < 1)*100
+
+res_acc_days[counter_days, 4] <- mean(BF[testing_repetitions_final$comp_symmetry_factor == "Assymetric" & BF < 1])
+counter_days <- counter_days+1
+}
+rownames(res_acc_days) <- time_limits
+
+write.csv(x = res_acc_days, file = "res_acc_days_results.csv")
 gthjklbgy
 
 

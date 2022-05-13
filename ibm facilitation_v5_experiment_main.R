@@ -210,23 +210,17 @@ uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
                                          max = limits[x + 1])})
 }
 
-ws <- 20 # wor30 size 
+ws <- 20 # world size 
 
 timesteps <- 50   # length of each run
 
-# slf_thinning_limit <- 0.1 # if competition effect is stronger or equal to this
-#                           plan20s will die
-
 n_reps <- 900 # number of LHS samples
-
   
 # The  number of plants of a population that would have just enough resources is
 intermediate_pop <- 16
 
 # The maximum size of plants such that they have just enough resources is
 max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
-
-# cada fila va a ser una fila de parametros a usar
 
 
 ###### lo que este dentro de esta seccion es solo para hacer el arbol complicandose
