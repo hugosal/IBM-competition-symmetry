@@ -28,181 +28,6 @@ center_world_arround <- function(center_xy, ws, coords){
   coords
 }
 
-plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE){
-  
-  text_box <- function(x, y, labels, cex){
-    sw   <- strwidth(labels)
-    sh   <- strheight(labels)
-    frsz <- 0
-    
-    if (strwidth(labels)>strwidth("1")){
-      text(x, y, labels, font=2, col="white", cex=cex)
-      text(x, y, labels, cex=cex*0.98, font=1)
-    }else{
-      text(x, y, labels, font=2, col="white", cex=cex)
-      text(x, y, labels, cex=cex*0.98, font=1) # con  el problema del que no se veia bien
-      # aca cambia el 0.98
-    }
-  }
-  
-  colores <- col2rgb(3:6)
-  colores <- apply(colores, 2, FUN = function(x)rgb(x[1]/255,
-                                                    x[2]/255,
-                                                    x[3]/255,
-                                                    alpha = 0.5)  )
-  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
-       yaxt="n", xaxt="n", yaxs="i", xaxs="i", asp=1,
-       xlim = c(0,ws),
-       ylim = c(0,ws))
-  
-  
-  
-  for (j in 1:nrow(com)){
-    
-    if (circle){
-      at_border <- c(com[j, 1] + com[j, 4] > ws | com[j, 1] - com[j, 4] < 0,
-                     com[j, 2] + com[j, 4] > ws | com[j, 2] - com[j, 4] < 0)
-    }else{
-      at_border <- c(abs(com[j, 1]- ws) < 1e-4 | com[j, 1] < 1e-4,
-                     abs(com[j, 2]- ws) < 1e-4 | com[j, 2] < 1e-4)
-      
-    }
-    
-    
-    
-    if (any(at_border)){
-      for(k in list(c(0,0),
-                    c(ws,0),
-                    c(-ws,0),
-                    c(0,ws),
-                    c(0,-ws),
-                    c(ws,ws),
-                    c(-ws,ws)
-      )){
-        if (circle){
-          plotrix::draw.circle(x = com$x[j]+k[1], y = com$y[j]+k[2], radius = com$sz[j], 
-                               col = colores[com$ft[j]])
-        }else{
-          points(x = com$x[j]+k[1], y = com$y[j]+k[2], col=com$ft, pch=19)
-        }
-        
-      }}
-    else{
-      if(circle){
-        plotrix::draw.circle(x = com$x[j], y = com$y[j], radius = com$sz[j], 
-                             col = colores[com$ft[j]])
-      }else{
-        points(com$x, com$y, col=com$ft, pch=19)
-      }
-    }
-    offst <- ws*0.97
-    letter_sz <- 0.9
-    
-    
-    if (numbers){
-      
-      if (sum(at_border) == 0){
-        if (circle){
-          text_box(x = com$x[j], y = com$y[j], labels = j, cex=letter_sz)
-        }else{
-          text_box(x = com$x[j]+(ws-offst), y = com$y[j]+(ws-offst), 
-                   labels = j, cex=letter_sz)
-        }
-        
-      }else if (sum(at_border)==2){
-        if (circle){text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
-          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
-        }else{
-          text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
-          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
-          
-        }
-        
-      }else if (at_border[2]){
-        if (circle){
-          text_box(x = com$x[j], ws-offst, labels = j, cex=letter_sz)
-          text_box(x = com$x[j], offst, labels = j, cex=letter_sz)
-        }else{
-          text_box(x = com$x[j]+ws-offst, ws-offst, labels = j, cex=letter_sz)
-          text_box(x = com$x[j]+ws-offst, offst, labels = j, cex=letter_sz)
-        }
-        
-        
-      }else if (at_border[1]){
-        
-        if (circle){
-          text_box(x = ws-offst , y = com$y[j], labels = j, cex=letter_sz)
-          text_box(x = offst , y = com$y[j], labels = j, cex=letter_sz)
-          
-        }else{
-          text_box(x = ws-offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
-          text_box(x = offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
-          
-        }
-        
-      }
-    }}
-  
-  if (! is.null(ws)){
-    polygon(c(-10, ws+50, ws+50,-1), c(0,0,-100,-100), col="white", border=NA)
-    
-    polygon(c(0, 0, -100,-100), c(0,ws+5,-20,-20), col="white" , border=NA)
-    
-    polygon(c(ws, ws, ws+5,ws+5), c(-60,ws+50,ws+50,-60), col="white", border=NA)
-    
-    polygon(c(-60, ws+50, ws+50,-10), c(ws,ws,ws+50,ws+50), col="white", border=NA)
-    
-    lines(x = c(0, ws), y = c(0, 0)  )
-    lines(x = c(0, 0), y = c(ws, 0)  )
-    lines(x = c(ws, 0), y = c(ws, ws)  )
-    lines(x = c(ws, ws), y = c(ws, 0)  )
-  }
-}
-
-generate_initial_points <- function(N, ws){
-  if (sqrt(N) == round(sqrt(N)) ){
-    n_per_row <- sqrt(N)
-    grid_poinst <- seq(from = 0, to = ws, 
-                       by = ws/(n_per_row))[1:n_per_row]
-    x <- rep(grid_poinst, n_per_row)
-    y <- as.vector(sapply(grid_poinst, function(x) rep(x, n_per_row)))
-    return(cbind(x, y))
-  }else if(sqrt(N/2) == round(sqrt(N/2))){
-    i <- sqrt(N/2)
-    separation <- ws/i
-    init_grid  <- seq(from = 0,
-                      to = ws - (separation/2), 
-                      by = separation/2)
-    n <- length(init_grid)
-    is_even <- (1:n) %% 2 == 0
-    coords <- matrix(ncol = 2, nrow = 0)
-    for (x in 1:n){
-      this_x <- init_grid[x]
-      if(is_even[x]){
-        yes <- init_grid[!is_even]
-      }else{
-        yes <- init_grid[is_even]
-      }
-      coords <- rbind(coords, matrix(c(rep(this_x, length(yes)),
-                                       yes), nrow = length(yes)))}
-    return(coords)
-  }else{
-    pts <- read.csv("configurations/point_configurations.csv", 
-                    header = FALSE, row.names = 1)
-    if (N %in% rownames(pts)){
-      coords <- pts[N == rownames(pts), ]
-      coords <- coords[coords != ""]
-      coords <- do.call(rbind, lapply(coords, function(x) as.numeric(strsplit(x, ":")[[1]])))
-      return(coords / 20 * ws) # Scaled to fit ws
-    }else{
-      stop("Configuration not found yet")}
-  }
-}
-
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
   sapply(1:n_samples, function(x){ runif(n = 1, 
@@ -214,7 +39,7 @@ ws <- 20 # world size
 
 timesteps <- 50   # length of each run
 
-n_reps <- 900 # number of LHS samples
+n_reps <- 2100 # number of LHS samples
   
 # The  number of plants of a population that would have just enough resources is
 intermediate_pop <- 16
@@ -250,7 +75,7 @@ null_values <- c(world_reachability = 0, max_initial_sz = 0.5, n_overcrowding_pl
 
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 10, 
-                                                           n_samples = n_reps)), # wrl reach,
+                                                           n_samples = n_reps)), # world reach kappa parameter
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = max_S/2, 
                                                            n_samples = n_reps)), # max initial size,
@@ -478,22 +303,6 @@ for (re in 1:nrow(LHS_param)){
   	
   	plantcomm$sz = plantcomm$sz + indgr
   	
-  	################### Mortality by self thinning. Plants will die if the
-  	# effect of competition is stronger than a thresholf
-  	
-  	#dead_by_self_thinning <- competition_effect <= slf_thinning_limit
-  	
-  	#if (any(dead_by_self_thinning)) {
-  	#  print("overcrowding dead")
-   # 	  plantcomm <- plantcomm[!dead_by_self_thinning, ]
-   # 	  rownames(plantcomm) = 1:nrow(plantcomm)
-   # 	  a <- a[!dead_by_self_thinning]
-   # 	  b <- b[!dead_by_self_thinning]}
-
-  
-  	
-  	####################
-
   	results_over_time[counter, ] <- c(re, 
   	                                  t, 
   	                                  mean(plantcomm$sz), 

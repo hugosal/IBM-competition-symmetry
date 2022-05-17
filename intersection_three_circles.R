@@ -1,16 +1,20 @@
+# intersection_three_circles.R
+# Auxiliary functions to circles_area_of_overlap.R
 
-# centers:x, centers_y, radii, are two element vectors, and distance is one element
+# Compute the coordinates of the intersection points of two circles
+# centers:x, centers_y, and radii, are two element vectors, and distance is one 
+# circle_numbers  is an optional vector of circle names
 two_circles_inters_points <- function(centers_x, centers_y, radii, 
-                                      circle_numbers = NULL,
-                                      distance){
+                                      distance,
+                                      circle_numbers = NULL){
   
-  a <- (radii[1]**2 -radii[2]**2+distance**2)/(2*distance)
-  h<- sqrt(radii[1]**2 - a**2)
-  x2 <- centers_x[1] + a * (centers_x[2]-centers_x[1])/distance
-  y2 <- centers_y[1] + a * (centers_y[2]-centers_y[1])/distance
+  a <- (radii[1]**2 - radii[2]**2 + distance**2) / (2 * distance)
+  h <- sqrt(radii[1]**2 - a**2)
+  x2 <- centers_x[1] + a * (centers_x[2] - centers_x[1])/distance
+  y2 <- centers_y[1] + a * (centers_y[2] - centers_y[1])/distance
   
   dx <- h*(centers_y[2]-centers_y[1])/distance
-  dy <-h*(centers_x[2]-centers_x[1])/distance
+  dy <- h*(centers_x[2]-centers_x[1])/distance
   
   x3_1 <- x2+dx
   x3_2 <- x2-dx
@@ -28,7 +32,7 @@ two_circles_inters_points <- function(centers_x, centers_y, radii,
                          c(NULL)))
 }
 
-
+# This function computes the area of intersection of two circles
 intersection_two_circles <- function(centers_x, centers_y, radii){
   r1 <- radii[1]
   r2 <- radii[2]
@@ -41,8 +45,8 @@ intersection_two_circles <- function(centers_x, centers_y, radii){
     return (0) 
   }
   
-  aa <- (r1**2 - r2**2 + D**2)/(2 * D)
-  bb <- (r2**2 - r1**2 + D**2)/(2 * D)
+  aa <- (r1**2 - r2**2 + D**2) / (2 * D)
+  bb <- (r2**2 - r1**2 + D**2) / (2 * D)
   th1 <- 2 * acos(aa / r1)                          
   th2 <- 2 * acos(bb / r2)
 
@@ -59,7 +63,7 @@ intersection_two_circles <- function(centers_x, centers_y, radii){
   a1 + a2
   }
 
-graficame_esta <- function(centers_x, centers_y, radii, npoints=500){
+plot_circles_simple <- function(centers_x, centers_y, radii, npoints=500){
   
   plot(1, xlab="x", ylab="y", type="n", 
        xlim=c(min(centers_x)-max(radii), max(centers_x)+max(radii)*2),  
@@ -88,8 +92,6 @@ graficame_esta <- function(centers_x, centers_y, radii, npoints=500){
 
 
 # This function computes the intersection area of three circles.
-# several circle configurations have different overlap regions
-
 intersection_three_circles <- function(centers_x, centers_y, radii){
   
   # circles must be sorted according to their radius
@@ -104,7 +106,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
   
   # count which circles are inside of another circle.
   # Circles are ordered according to their radii, and since
-  # only a larger cicle may contain a shorter one, so only 
+  # only a larger cicle may contain a shorter one, only 
   # combinations cmbdn(1:3) are needed
   
   circles_inside <-  combn(1:3, 2, 
@@ -139,11 +141,9 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
     
     } 
   
-  # compute points of overlap between  a pair of circles, and see if 
-  # the third other circle (g) contain both of them
-
   intersec_points_contained <- c(FALSE, FALSE , FALSE) 
-   
+  # compute points of overlap between  a pair of circles, and see if 
+  # the third other circle (g) contains both of them   
   for (g in 1:3){
     c1 <- (1:3)[-g][1]
     c2 <- (1:3)[-g][2]
@@ -237,17 +237,195 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
     ((rs_2 * asin(c2 / (2 * r[2]))) - ( (c2/ 4) * sqrt((4 * rs_2) - c2**2)))
 
   if ((d1_3 * sintheta) < (y13 + ((y23 - y13) / (x23 - x13)) * ((d1_3 * costheta) - x13) )){
-      arc_3 <- (r[3]**2*pi) - ((rs_3 * asin(c3 / (2 * r[3])))  - ( ((c3/ 4) * sqrt((4 * rs_3) - c3**2) )))
+      arc_3 <- (r[3]**2 * pi) - ((rs_3 * asin(c3 / (2 * r[3])))  - ( ((c3/ 4) * sqrt((4 * rs_3) - c3**2) )))
       }else{
     arc_3 <-((rs_3 * asin(c3 / (2 * r[3])))  - ( ((c3/ 4) * sqrt((4 * rs_3) - c3**2) ) ))
     }
   A + arc_3 
   }
 
-# ### QUITAR COMENTARIOS AQUI
-# 
-# #pruebas
-# 
+# Function to generate the coordinates of N arragned points in a torus world of size ws
+generate_initial_points <- function(N, ws){
+  if (sqrt(N) == round(sqrt(N)) ){
+    n_per_row <- sqrt(N)
+    grid_poinst <- seq(from = 0, to = ws, 
+                       by = ws/(n_per_row))[1:n_per_row]
+    x <- rep(grid_poinst, n_per_row)
+    y <- as.vector(sapply(grid_poinst, function(x) rep(x, n_per_row)))
+    return(cbind(x, y))
+  }else if(sqrt(N/2) == round(sqrt(N/2))){
+    i <- sqrt(N/2)
+    separation <- ws/i
+    init_grid  <- seq(from = 0,
+                      to = ws - (separation/2), 
+                      by = separation/2)
+    n <- length(init_grid)
+    is_even <- (1:n) %% 2 == 0
+    coords <- matrix(ncol = 2, nrow = 0)
+    for (x in 1:n){
+      this_x <- init_grid[x]
+      if(is_even[x]){
+        yes <- init_grid[!is_even]
+      }else{
+        yes <- init_grid[is_even]
+      }
+      coords <- rbind(coords, matrix(c(rep(this_x, length(yes)),
+                                       yes), nrow = length(yes)))}
+    return(coords)
+  }else{
+    pts <- read.csv("configurations/point_configurations.csv", 
+                    header = FALSE, row.names = 1)
+    if (N %in% rownames(pts)){
+      coords <- pts[N == rownames(pts), ]
+      coords <- coords[coords != ""]
+      coords <- do.call(rbind, lapply(coords, function(x) as.numeric(strsplit(x, ":")[[1]])))
+      return(coords / 20 * ws) # Scaled to fit ws
+    }else{
+      stop("Configuration not found yet")}
+  }
+}
+
+# Function to plot a plant population, number indicate if the number of each plant 
+# is to be shown, circle indicates if the circles indicating the size of each 
+# plants is to be shown,.
+plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE){
+  
+  text_box <- function(x, y, labels, cex){
+    sw   <- strwidth(labels)
+    sh   <- strheight(labels)
+    frsz <- 0
+    
+    if (strwidth(labels)>strwidth("1")){
+      text(x, y, labels, font=2, col="white", cex=cex)
+      text(x, y, labels, cex=cex*0.98, font=1)
+    }else{
+      text(x, y, labels, font=2, col="white", cex=cex)
+      text(x, y, labels, cex=cex*0.98, font=1) # con  el problema del que no se veia bien
+      # aca cambia el 0.98
+    }
+  }
+  
+  colores <- col2rgb(3:6)
+  colores <- apply(colores, 2, FUN = function(x)rgb(x[1]/255,
+                                                    x[2]/255,
+                                                    x[3]/255,
+                                                    alpha = 0.5)  )
+  plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
+       yaxt="n", xaxt="n", yaxs="i", xaxs="i",
+       xlim = c(0,ws),
+       ylim = c(0,ws), asp=1, bty="n")
+  
+  
+  
+  for (j in 1:nrow(com)){
+    
+    if (circle){
+      at_border <- c(com[j, 1] + com[j, 4] > ws | com[j, 1] - com[j, 4] < 0,
+                     com[j, 2] + com[j, 4] > ws | com[j, 2] - com[j, 4] < 0)
+    }else{
+      at_border <- c(abs(com[j, 1]- ws) < 1e-4 | com[j, 1] < 1e-4,
+                     abs(com[j, 2]- ws) < 1e-4 | com[j, 2] < 1e-4)
+      
+    }
+    
+    
+    
+    if (any(at_border)){
+      for(k in list(c(0,0),
+                    c(ws,0),
+                    c(-ws,0),
+                    c(0,ws),
+                    c(0,-ws),
+                    c(ws,ws),
+                    c(-ws,ws)
+      )){
+        if (circle){
+          plotrix::draw.circle(x = com$x[j]+k[1], y = com$y[j]+k[2], radius = com$sz[j], 
+                               col = colores[com$ft[j]])
+        }else{
+          points(x = com$x[j]+k[1], y = com$y[j]+k[2], col=com$ft, pch=19)
+        }
+        
+      }}
+    else{
+      if(circle){
+        plotrix::draw.circle(x = com$x[j], y = com$y[j], radius = com$sz[j], 
+                             col = colores[com$ft[j]])
+      }else{
+        points(com$x, com$y, col=com$ft, pch=19)
+      }
+    }
+    offst <- ws*0.97
+    letter_sz <- 0.9
+    
+    
+    if (numbers){
+      
+      if (sum(at_border) == 0){
+        if (circle){
+          text_box(x = com$x[j], y = com$y[j], labels = j, cex=letter_sz)
+        }else{
+          text_box(x = com$x[j]+(ws-offst), y = com$y[j]+(ws-offst), 
+                   labels = j, cex=letter_sz)
+        }
+        
+      }else if (sum(at_border)==2){
+        if (circle){text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+        }else{
+          text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+          
+        }
+        
+      }else if (at_border[2]){
+        if (circle){
+          text_box(x = com$x[j], ws-offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j], offst, labels = j, cex=letter_sz)
+        }else{
+          text_box(x = com$x[j]+ws-offst, ws-offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j]+ws-offst, offst, labels = j, cex=letter_sz)
+        }
+        
+        
+      }else if (at_border[1]){
+        
+        if (circle){
+          text_box(x = ws-offst , y = com$y[j], labels = j, cex=letter_sz)
+          text_box(x = offst , y = com$y[j], labels = j, cex=letter_sz)
+          
+        }else{
+          text_box(x = ws-offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          text_box(x = offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          
+        }
+        
+      }
+    }}
+  
+  if (! is.null(ws)){
+    polygon(c(-10, ws+5, ws+5,-10), c(0,0,-10,-10), col="white", border=NA)
+    
+    polygon(c(0, 0, -10,-10), c(0,ws+5,-2,-2), col="white" , border=NA)
+    
+    polygon(c(ws, ws, ws+5,ws+5), c(-60,ws+5,ws+5,-60), col="white", border=NA)
+    
+    polygon(c(-60, ws+5, ws+5,-10), c(ws,ws,ws+5,ws+5), col="white", border=NA)
+    
+    lines(x = c(0, ws), y = c(0, 0)  )
+    lines(x = c(0, 0), y = c(ws, 0)  )
+    lines(x = c(ws, 0), y = c(ws, ws)  )
+    lines(x = c(ws, ws), y = c(ws, 0)  )
+  }
+}
+
+
+# # Next are several test to validate the functions
+# # 
 # # para probar esto, voy a usar el triangulo de reileux
 # # dado que los tres centros estan a la distancia igual a sus radios (que
 # # tambien son iguales) el area de interseccion debe ser
@@ -258,7 +436,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # ra <- c(1, 1, 1)
 # dist(matrix(c(xes,yes), ncol = 2))#triangulo reilauexx
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -275,7 +453,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # 
 # dist(matrix(c(xes,yes), ncol = 2))#triangulo reilauexx
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # text(x = max(xes)+max(ra), y = min(yes)-max(ra),
@@ -289,7 +467,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 1)
 # ra <- c(1, 1, 0.5)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -307,7 +485,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # ra <- c(2, 1, 1)
 # 
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -326,7 +504,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # ra <- c(2, 1, 1)
 # 
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # text(x = max(xes)+max(ra), y = min(yes)-max(ra),
@@ -341,7 +519,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0)
 # ra <- c(2, 2, 1.2)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -355,7 +533,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0.1)
 # ra <- c(2, 2, 1.6)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # text(xes, yes, 1:length(xes))
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -372,7 +550,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0)
 # ra <- c(2, 2, 1.04)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -387,7 +565,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0)
 # ra <- c(2, 2, 1.9)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # text(x = max(xes)+max(ra), y = min(yes)-max(ra),
@@ -401,7 +579,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0)
 # ra <- c(4, 2, 2 )
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # text(x = max(xes)+max(ra), y = min(yes)-max(ra),
@@ -417,7 +595,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0)
 # ra <- c(4, 3, 2)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # text(x = max(xes)+max(ra), y = min(yes)-max(ra),
@@ -436,7 +614,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # xes <- c(0, 0, 0)
 # yes <-c(0, 0, 0)
 # ra <- c(4, 3, 2)
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # text(x = max(xes)+max(ra), y = min(yes)-max(ra),
@@ -452,7 +630,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0, 0)
 # ra <- c(2, 2, 0.5)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -466,7 +644,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 1, 0)
 # ra <- c(0.6, 0.6, 0.6)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -482,7 +660,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-runif(3, -2, 2)
 # ra <- runif(3, 1, 4)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # 
@@ -508,11 +686,11 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # #fallo porque no estaba un parentesis bien
 # # y no  se hacia la multiplicacion cuando debia ser
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # intersection_three_circles(xes, yes, ra)
 # 
 # 
-# graficame_esta(c(0,3,1), c(0,0,2), c(2,2,1))
+# plot_circles_simple(c(0,3,1), c(0,0,2), c(2,2,1))
 # 
 # intersection_three_circles(c(0,3,1), c(0,0,2), c(2,2,1))
 # 
@@ -526,7 +704,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # xes <- c(6, 1.5,2)
 # yes <-c( 2,1.6,2)
 # ra<- c( 4, 2, 1)
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # intersection_two_circles(centers_x = xes[c(1,3)],
 #                          centers_y = yes[c(1,3)],
 #                          radii = ra[c(1,3)])
@@ -544,7 +722,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # 
 # intersection_three_circles(xes[c(2,4,5)], yes[c(2,4,5)], ra[c(2,4,5)])
 # 
-# graficame_esta(xes[c(2,4,5)], yes[c(2,4,5)], ra[c(2,4,5)])
+# plot_circles_simple(xes[c(2,4,5)], yes[c(2,4,5)], ra[c(2,4,5)])
 # 
 # 
 # 
@@ -552,7 +730,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c( sqrt(1-0.5**2), 0, 0)
 # ra <- c(2, 1, 1)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # intersection_two_circles(centers_x = xes[c(3,2)],
 #                          centers_y = yes[c(3,2)],
@@ -567,7 +745,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes<-c( 1.1513890, -0.1994831,  1.8560016)
 # ra <- c(1.857299, 3.313472, 1.691115)
 # 
-# graficame_esta(xes, yes,ra)
+# plot_circles_simple(xes, yes,ra)
 # 
 # intersection_two_circles(centers_x = xes[c(1,3)],
 #                          centers_y = yes[c(1,3)],
@@ -583,7 +761,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # xes <- c(0,-0.6)
 # yes <-  c(0,0)
 # ra <- c(1, 0.5)
-# graficame_esta(xes, yes,ra)
+# plot_circles_simple(xes, yes,ra)
 # points(xes[2], yes[2])
 # abline(v=-0.925)
 # 
@@ -597,7 +775,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes<-c(  9.320638  ,  9.976079   , 10.000000  )
 # ra <- c(3.329812, 2.047095, 1.346420)
 # 
-# graficame_esta(xes, yes,ra)
+# plot_circles_simple(xes, yes,ra)
 # 
 # intersection_two_circles(centers_x = xes[c(2,1)],
 #                          centers_y = yes[c(2,1)],
@@ -613,7 +791,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <-c(0, 0.8660254, -2)#,-1)
 # ra <- c(1,  2, 2)#, 1)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # intersection_three_circles(xes, yes, ra)
 # 
@@ -624,7 +802,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <- c(10.72434, 11.10207, 10.74569)
 # ra <- c(0.8083996, 0.7807484, 0.7322310  )
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # intersection_three_circles(xes,yes, ra)
 # # ya quedo, el problema era que se deteactaba como
 # # un caso en el que el circulo estaba adentro de otro o algo mal hecho
@@ -638,14 +816,14 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # xes <- c(10.87894,10.00000,  10.09625)
 # yes <- c( 12.02520,10.00000,10.81140)
 # ra <-c( 1.736221,1.646274,1.040372)
-# #graficame_esta(xes, yes, ra)
+# #plot_circles_simple(xes, yes, ra)
 # intersection_three_circles(xes, yes, ra)
 # 
 # # esta  parecia que no funcionaba , pero ya
 # xes <- c(13.46621, 10.00000, 10.87894, 12.37296 ,10.09625)[c(1,2,4)]
 # yes <- c(10.20452, 10.00000, 12.02520, 11.61642, 10.81140)[c(1,2,4)]
 # ra <- c(1.670403, 1.824236, 1.884513, 1.838703, 1.083562)[c(1,2,4)]
-# graficame_esta(xes, yes,ra)
+# plot_circles_simple(xes, yes,ra)
 # intersection_three_circles(xes, yes, ra)
 # 
 # # en la que sigue fallaba que era un caso dificil, pero al momento
@@ -656,11 +834,11 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # ra <- c(1.824236, 1.884513 ,1.083562)
 # 
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # intersection_three_circles(xes, yes, ra)
 # 
 # 
-# # aqui puede haber un error en el documento inicial https://www.youtube.com/watch?v=Zr4jwxXP04w&list=RDGMEMQ1dJ7wXfLlqCjwV0xfSNbA
+# # aqui puede haber un error en el documento inicial de donde saque el algoritmo de calcular areas de tres
 # # resulta que este es un caso con eso de reflex, entonces, se estaba calculando el arco menor
 # # pero, segui inicialmente el algorimto al pie de la letra, consultando
 # # otras formas ya vi que habia que restar r[2]**2*pi-etc, pero en el original
@@ -670,7 +848,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # ra <- c(1.408165,  1.335831, 0.954278)
 # # debe ser 2.28
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # intersection_three_circles(xes, yes, ra)
 # 
@@ -684,7 +862,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # ra <- c(2.143131, 2.098075, 2.229723, 2.347259, 1.714867, 2.066434, 1.439183)
 # 
 # settt<-c(5,6,7)
-# graficame_esta(xes[settt], yes[settt], ra[settt])
+# plot_circles_simple(xes[settt], yes[settt], ra[settt])
 # intersection_three_circles(xes[settt], yes[settt], ra[settt])
 #
 # 
@@ -694,7 +872,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # 
 # settt<-c(3,6,8,9)
 # 
-# graficame_esta(xes[c(6,8,9)], yes[c(6,8,9)], ra[c(6,8,9)])
+# plot_circles_simple(xes[c(6,8,9)], yes[c(6,8,9)], ra[c(6,8,9)])
 # intersection_three_circles(xes[c(6,8,9)], yes[c(6,8,9)], ra[c(6,8,9)])
 # 
 # xes <-c(0.9480961 ,1.7342106 ,0.8072776 ,1.6636906)
@@ -703,14 +881,14 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # 
 # sett<- c(1,2,3)
 # 
-# graficame_esta(xes[sett], yes[sett], ra[sett])
+# plot_circles_simple(xes[sett], yes[sett], ra[sett])
 # intersection_two_circles(xes[sett[c(1,2)]], yes[sett[c(1,2)]], ra[sett][c(1,2)])
 # intersection_three_circles(xes[sett], yes[sett], ra[sett])
 # 
 # xes <- c(0.07244497, 1.09237271 ,0.91348859 ,1.24595679)[]
 # yes <- c(0.1336482 ,1.5746221 ,1.4636216, 1.7886682)
 # ra <-c(1.493899, 1.171559, 1.045887 ,1.424308)
-# graficame_esta(xes[c(4,2,3)], yes[c(4,2,3)], ra[c(4,2,3)])
+# plot_circles_simple(xes[c(4,2,3)], yes[c(4,2,3)], ra[c(4,2,3)])
 # 
 # are<-intersection_three_circles(xes[c(4,2,3)], yes[c(4,2,3)], ra[c(4,2,3)])
 # 
@@ -722,7 +900,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <- c( 0.9427072, 1.5913909, 1.4699771)
 # ra <- c(1.334639, 1.279570 ,1.116100)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # intersection_two_circles(xes[c(1,3)],yes[c(1,3)],ra[c(1,3)])
@@ -734,7 +912,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <- c(0.9435113, 0.7290017 ,0.8874463)
 # ra <- c(1.398440 ,1.132017, 1.048008)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # intersection_two_circles(xes[c(2,3)],yes[c(2,3)],ra[c(2,3)])
@@ -746,7 +924,7 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # yes <- c(0.92748815 ,0.01710736 , 0.30829904)
 # ra <- c(1.361168 ,1.454600 , 1.256604)
 # 
-# graficame_esta(xes, yes, ra)
+# plot_circles_simple(xes, yes, ra)
 # 
 # are<-intersection_three_circles(xes, yes, ra)
 # intersection_two_circles(xes[c(2,3)],yes[c(2,3)],ra[c(2,3)])
@@ -758,14 +936,15 @@ intersection_three_circles <- function(centers_x, centers_y, radii){
 # xes <- c(0.03318468, 0.57895659, 1.74898852 ,1.59984376)
 # yes <-c(0.624486434273422,0.942707156762481,1.59139089891687,1.46997711015865)
 # ra <- c(1.17046336608473,1.33463932166342,1.27956974727567,1.11610015179031)
-# graficame_esta(xes[2:4], yes[2:4], ra[2:4])
+# plot_circles_simple(xes[2:4], yes[2:4], ra[2:4])
 # 
 # are<-intersection_three_circles(xes[2:4], yes[2:4], ra[2:4])
 # intersection_two_circles(xes[c(2,4)], yes[c(2,4)], ra[c(2,4)])
 # text(x = 3, y = 0,
 #      bquote(A[1]*intersect(A[2])*intersect(A[3])==.(round(are,3))))
 # 
-# # #  # # ### QUITAR COMENTARIOS AQUI
+########################################
+###### End of tests
 
 
 
