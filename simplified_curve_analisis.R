@@ -1,308 +1,123 @@
-#library(animation)
-results_over_time <- read.csv("LHS_results_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_4_reps_20ws_50tsteps_23_seed.csv",
+#### Analysis of simulated populations over time
+
+results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2100_reps_20ws_50tsteps_23_seed.csv",
                               stringsAsFactors = F)
 
-# results_over_time <- read.csv("tree_steps/tree4_variables_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_400_reps.csv", 
-#                              stringsAsFactors = F)
+# Time 0 is the population at initialization, before any competition occurs, so it
+# is omitted from this analysis
+results_over_time <- results_over_time[results_over_time$t > 0, ]
+
+## Asses the relationship between competition and variation
+
+lm_model <- lm(mean_competiton~coef_var,  data = results_over_time)
+summary(lm_model)
 
 
-############## relationship between competition and variation
-
-data_with_competiton <- results_over_time[results_over_time$mean_competiton < 1, ]
-
-
+my_colors <- colorRampPalette(c("#440154FF", "#482878FF", "#3E4A89FF", 
+                                "#31688EFF", "#26828EFF", "#1F9E89FF",
+                                "#35B779FF", "#6DCD59FF", "#B4DE2CFF",
+                                "#FDE725FF"))
+  
+  
 png("coefvar_competiton_per_time.png",
     width = 12, height = 12, units = "cm", res = 300)
 
-plot(data_with_competiton$coef_var, 
-     data_with_competiton$mean_competiton, pch=".", 
-     ylab="Mean competition coefficient", 
-     xlab=" Coefficient of variation",
-     col = heat.colors(31)[as.factor(data_with_competiton$t)])
+layout(mat = matrix(c(1, 1, 1, 0, 2, 0),  nrow = 3, ncol = 2),
+       heights = c(2,3, 2), widths = c(7,1))
 
-model_competiton<- lm(mean_competiton~coef_var, 
-                      data=data_with_competiton)
+plot(x = results_over_time$coef_var, 
+     y = results_over_time$mean_competiton,
+     pch=20, cex = 0.05,  yaxs="i", cex.lab = 1.3,
+     ylab = "Mean competition coefficient", 
+     xlab = "Size coefficient of variation",
+     col = my_colors(length(unique(results_over_time$t)))[results_over_time$t])
 
-abline(model_competiton, col="black", lwd=1.5)
+# Colorbar
+pts_colorbar <- 0:max(results_over_time$t)
+par(mar = c(2, 0, 1, 4))
+image(matrix(pts_colorbar, nrow = 1), axes = F,
+      col = my_colors(length(unique(results_over_time$t))), 
+      zlim = c(0, max(pts_colorbar)))
+box(which = "plot", lty = "solid")
+
+ticks_at <- seq(from = min(results_over_time$t), to = max(results_over_time$t), 
+                length.out = 6)
+axis(4, at = seq(0, 1, length.out = length(ticks_at)), 
+     labels = pts_colorbar[ticks_at + 1], 
+     lwd = 0, lwd.ticks = 1, las = 1)
+
+mtext(text = "Time-step", side = 3, cex = 0.8, line = 1)
 
 dev.off()
 
-summary(model_competiton)
+cor.test(x = results_over_time$coef_var, 
+         y = results_over_time$mean_competiton)
 
-plot(model_competiton)
-######## Curve classification, identify what sort of temporal patterns doies
-# the coef var has?
-
-
-clasfify_Curve <- function(cvar, t, full_classification = TRUE){
-  #these are indexes
-  init_t <- which(t==0)
-  final_t <- length(t)
-  
-  final_cvar <- cvar[final_t]
-  initial_cvar <- cvar[init_t]
-  
-  significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-5
-  
-  if (all(!(significativos[-1]))) {return("flat")}
-  
-  if ( final_cvar > initial_cvar) {
-    type_curve <- "inc"
-    aumenta_coefvar <- c(NA, cvar[-length(cvar)]) < cvar  
-    
-    }else{
-      aumenta_coefvar <- c(NA, cvar[-length(cvar)]) > cvar 
-    type_curve <- "dec"}
-  state <- aumenta_coefvar[2]
-  
-  inflpts <- c()
-  
-  for (i in 3:length(aumenta_coefvar)){
-    
-    if (state != aumenta_coefvar[i] & significativos[i]){
-      state <- aumenta_coefvar[i]
-      inflpts <- c( inflpts, state )# esto va a decir si es concavo o convexo la diferencia
-    }
-  }
-  #  print(aumenta_coefvar)
-    #inflpts <- if (length(inflpts)>0) inflpts[seq(from= 1, to=length(inflpts), by=2)]
-
-  if (full_classification) {
-    for (i in inflpts){
-      type_curve <- paste(type_curve, if (i) "_convex" else "_concave", sep="")}
-      #type_curve <- paste(type_curve, if (i) "_c" else "_c", sep="")}
-  }
-
-  type_curve
-}
-
-quiero <- 27
-clasfify_Curve(t=results_over_time$t[results_over_time$re==quiero],
-                 cvar = results_over_time$coef_var[results_over_time$re==quiero],
-               full_classification = T)
-results_over_time$n_overcrowding_plants[results_over_time$re==67][1]
-plot(x=results_over_time$t[results_over_time$re==quiero],
-              y = results_over_time$coef_var[results_over_time$re==quiero], type="l")
-
-n_sims <- max(results_over_time$re)
-
-curves_description <- data.frame(
-  type = character(n_sims),
-  mean_potential_competitors  = numeric(n_sims),
-  sd_potential_competitors  = numeric(n_sims),
-  world_reachability= numeric(n_sims),
-  max_initial_sz = numeric(n_sims),
-  overcrowding = numeric(n_sims),
-  comp_symmetry= numeric(n_sims),
-  stringsAsFactors = F)
-
-for (q in 1:n_sims){
-  one_curve <- results_over_time[results_over_time$re==q, ]
-
-  curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
-                                              t = one_curve$t, 
-                                              full_classification = T)
-                               , one_curve[1, 8:13])
-  }
-
-table(curves_description$type)/sum(table(curves_description$type))*100
-
-
-
-#barplot(table(curves_description$type))
-
-#  png("coefvar_per_biomass_dec_c.png", 
-#      width = 12, height = 12, units = "cm",
-#      res = 300)
- plot(1, xlim=c(0,max(results_over_time$t)), ylim=c(0.05,0.3), 
-      xlab="t", ylab="Coef. Var")
- hu<-1
- simuls <- which(curves_description$type == 'inc_convex')[1:10]
- for (fre in simuls){
-   cvar <- results_over_time$coef_var[results_over_time$re==fre]
-   t <- results_over_time$t[results_over_time$re==fre]
-   #plot(t, cvar, type = "b", main=bquote(.(fre)))
-   lines(t, cvar, col = rainbow(length(simuls))[hu], lwd=2)
-   text(t[31], cvar[31], labels = fre, col=rainbow(length(simuls))[hu])
-   hu<-hu+1
- }
-# dev.off()
-# 
-library(tree)
-
-curves_description$type <- factor(curves_description$type)
-
-curves_description$type_inc_dec <- factor(sapply(curves_description$type, function(x){
-  if (x %in% c("inc_c", "inc")) "inc" else "dec"
-}))
-
-curves_description$type_c_noc <- factor(sapply(curves_description$type, function(x){
-  if (x %in% c("inc_c", "dec_c")) "C" else "N"
-}))
-
-
-curves_description$overcrowding <- as.numeric(curves_description$overcrowding)
-
-names_frequent <- names(table(curves_description$type)[table(curves_description$type) > 20])
-
-curves_description_frequents <- curves_description[curves_description$type %in% names_frequent,  ]
-
-# re train with cross validation
+### plots f examples of curves 
+###### esta fallando lo de abajo, los ejes del paneld erecho no quedan bieeeeeeeeen
+png("examples_curves_variation.png",
+    width = 14, height = 12, units = "cm", res = 300)
 set.seed(26)
+par(mar = c(5, 4, 4, 1) + 0.1)
+layout(mat = matrix(c(1, 2),  nrow = 1, ncol = 2),
+       heights = c(2), widths = c(4, 1))
+plot(1, xlim = c(1, max(results_over_time$t)), 
+     ylim=c(0, 0.4), yaxs = "i", xaxs = "i",
+     xlab="Time-step", ylab="Size Coefficient of Variation", )
+hu<-1
+simuls <- sample(1:max(results_over_time$re), size = 9)
 
-test_index <- sample(x = 1:nrow(curves_description_frequents), 
-                     size = 1/3*nrow(curves_description_frequents), replace = F)
-# test_index <-c(
-#   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
-#   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
-#   sample(which(curves_description_frequents$type == "inc"), size = 80, replace = F),
-#   sample(which(curves_description_frequents$type == "dec"), size = 80, replace = F))
+for (fre in simuls){
+  cvar <- results_over_time$coef_var[results_over_time$re==fre]
+  t <- results_over_time$t[results_over_time$re==fre]
+  lines(t, cvar, col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu], 
+        lwd=2)
+  hu<-hu+1
+}
+par(mar = c(10, 0 , 4, 3))
+plot(1, xlim = c(0, 0.5), ylim=c(0, 1), 
+     xlab="", ylab="", xaxt = "n", yaxt = "n", bty="n")
 
+axis_positions <- seq(from = 0, to = 0.5, length.out = 4)
+axis(side = 4, at = c(0, 1), labels = c("Lower limit", "Upper limit"), 
+     las = 1, cex.axis = 0.5, tick = FALSE)
+axis(side = 1, at = axis_positions, labels = c("Spatial disarrangement", 
+                                               "Initial size variation",
+                                               "Overcrowding",
+                                               "Competition symmetry"), 
+     las = 2, cex.axis = 0.8, tick = FALSE)
 
-train <- curves_description_frequents[test_index, ]
-test <- curves_description_frequents[-test_index, ]
-
-coef_var_tree_discrete <- tree(type~ mean_potential_competitors+
-                                 max_initial_sz +
-                                 overcrowding +
-                                 comp_symmetry,
-                               data=train)
-
-
-plot(coef_var_tree_discrete)
-text(coef_var_tree_discrete)
-summary(coef_var_tree_discrete)
-
-#accuracy of first model
-sum(test$type == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
-
-# to know what type of simulations are harder to predict
-
-wrongly_predicted <- test[test$type_inc_dec != predict(coef_var_tree_discrete, test, type="class"),]
-
-
-table(curves_description$type_inc_dec)
-table(wrongly_predicted$type_inc_dec)
-
-
-plot(cv.tree(coef_var_tree_discrete))
-
-coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
-summary(coef_var_tree_discrete_prune)
-
-# accudary of second
-pcntg <- sum(test$type == predict(coef_var_tree_discrete_prune, 
-                                          test, type="class"))/nrow(test)*100
-pcntg <- paste(round(pcntg, 1),"%", sep="" )
-
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_initial_sz", replacement = "Initial size variation")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "world_reachability", replacement = "Spatial disarrangement")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "t_potential_competitors", replacement = "Potential competitors")
-
-
-levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dec.",  "Inc.")
-
-png(paste("classifciation_tree_detail_description.png", sep = ""),
-    width = 27, height = 18, units = "cm",
-    res = 300)
-
-plot(coef_var_tree_discrete_prune)
-text(coef_var_tree_discrete_prune, pretty = 0)
-
-text(7.2,3000,  bquote(.(pcntg)~" Cross-validation\n predicccion accuracy "))
-dev.off()
-############# repeat for c or no c
-
-set.seed(25)
-
-test_index <- sample(x = 1:nrow(curves_description_frequents), size = 1000, replace = F)
-# test_index <-c(
-#   sample(which(curves_description_frequents$type == "inc_c"), size = 160, replace = F),
-#   sample(which(curves_description_frequents$type == "dec_c"), size = 160, replace = F),
-#   sample(which(curves_description_frequents$type == "inc"), size = 80, replace = F),
-#   sample(which(curves_description_frequents$type == "dec"), size = 80, replace = F))
-
-
-train <- curves_description_frequents[test_index, ]
-test <- curves_description_frequents[-test_index, ]
-
-coef_var_tree_discrete <- tree(type_c_noc ~ world_reachability+
-                                 max_initial_sz+
-                                 overcrowding+
-                                 comp_symmetry,
-                               data=train)
-
-
-plot(coef_var_tree_discrete)
-text(coef_var_tree_discrete)
-summary(coef_var_tree_discrete)
-
-#accuracy of first model
-sum(test$type_c_noc == predict(coef_var_tree_discrete, test, type="class"))/nrow(test)
-
-plot(cv.tree(coef_var_tree_discrete))
-
-coef_var_tree_discrete_prune <- prune.tree(coef_var_tree_discrete, best = 8)
-summary(coef_var_tree_discrete_prune)
-
-# accudary of second
-pcntg <- sum(test$type_c_noc == predict(coef_var_tree_discrete_prune, 
-                                          test, type="class"))/nrow(test)*100
-pcntg <- paste(round(pcntg, 1),"%", sep="" )
-
-
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_initial_sz", replacement = "Initial size variation")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "world_reachability", replacement = "Spatial disarrangement")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "overcrowding", replacement = "Overcrowding")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "max_growth_rate", replacement = "Maximum growth rate")
-coef_var_tree_discrete_prune$frame$var <- gsub(x = coef_var_tree_discrete_prune$frame$var, pattern = "comp_symmetry", replacement = "Competition symmetry")
-
-
-levels(coef_var_tree_discrete_prune$frame$yval) <- c("Dip", "No dip")
-
-png(paste("classifciation_tree_dip_nodip.png", sep = ""),
-    width = 27, height = 18, units = "cm",
-    res = 300)
-
-plot(coef_var_tree_discrete_prune)
-text(coef_var_tree_discrete_prune, pretty = 0)
-text(2,935,  bquote(.(pcntg)~" Cross-validation\n predicccion accuracy "))
+for (xcord in axis_positions){
+  lines(x = c(xcord, xcord), y = c(0, 1), 
+        lty = 1, col = "grey" )
+  lines(x = c(xcord * 0.9, xcord * 1.1), y = c(1, 1), 
+        lty = 1, col = "grey" )
+  lines(x = c(xcord * 0.9, xcord * 1.1), y = c(0, 0), 
+        lty = 1, col = "grey" )
+  }
+hu <- 1
+for (fre in simuls){
+    points(axis_positions[1], results_over_time$world_reachability[results_over_time$re==fre][1]/max(results_over_time$world_reachability),
+           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
+           pch = "-", cex= 2)
+    points(axis_positions[2], results_over_time$max_initial_sz[results_over_time$re==fre][1]/max(results_over_time$max_initial_sz),
+           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
+           pch = "-", cex= 2)
+    points(axis_positions[3], results_over_time$n_overcrowding_plants[results_over_time$re==fre][1]/max(results_over_time$world_reachability),
+           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
+           pch = "-", cex= 2)
+    points(axis_positions[4], results_over_time$comp_symmetry[results_over_time$re==fre][1]/max(results_over_time$comp_symmetry),
+           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
+           pch = "-", cex= 2)
+    hu<-hu+1
+  }
 
 dev.off()
 
 
-# 
-# library(animation)
-# set.seed(24)
-# saveGIF({
-# for (q in sample(which(curves_description_frequents$type=="dec_c"), 30)){
-# 
-#   one_curve <- results_over_time[results_over_time$re==q, ]
-# 
-#   final_t <-max(one_curve$t)
-#   final_y <- one_curve$total_biomass[one_curve$t==final_t]
-# 
-#   initial_y <- one_curve$total_biomass[one_curve$t==0]
-# 
-#   plot(one_curve$total_biomass, one_curve$coef_var, type="l", ylim=c(0,0.4),
-#       xlim=c(0, 400),
-#        col="black", main=q, xlab="Total Biomass",
-#        ylab = "Coefficient of variation", lwd=3)
-# 
-#   #points(final_t, final_y, pch=19, cex=1.5)
-#   #points(0, initial_y,  pch=19, cex=1.5)
-#   #points(infl_t, infl_pt, col="purple", pch=19, cex=1.5)
-#   #abline(v=infl_t, lty=2, lwd=1.5)
-# 
-#   }
-#   }, movie.name = "coef_var_dec_biomass.gif", interval = 2,
-#   ani.width = 480, ani.height = 480)
-# 
 
 
+### bayesian posterior distribution of parameters
 
 bayesian_posterior_parameter <- function(values, 
                                          total_values,
@@ -326,21 +141,6 @@ bayesian_posterior_parameter <- function(values,
   
   
   if ( is.null(values_for_joint)) {
-    
-    # if( is.factor(values)){
-    #   
-    #   ranges_init <- sort(as.numeric(levels(values)))
-    #   prior <- sapply(seq_along(ranges_init), function(x){ sum(total_values == ranges_init[x])} )
-    #   prior <- prior/N
-    #   
-    #   
-    #   likelyhood <- sapply(seq_along(ranges_init), function(x){ sum(values == ranges_init[x])  } )
-    #   likelyhood <- likelyhood/length(values)
-    #   
-    #   return(list(posterior = (prior*likelyhood)/sum(prior*likelyhood),
-    #               prior = prior,
-    #               param_vals = ranges_init))
-    # }
     
    prior <- sapply(1:n_categ, function(x){ sum(total_values >= ranges_init[x] & total_values < ranges_init[x+1])  } )
    prior <- prior/N

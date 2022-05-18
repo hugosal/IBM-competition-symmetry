@@ -288,7 +288,8 @@ generate_initial_points <- function(N, ws){
 # Function to plot a plant population, number indicate if the number of each plant 
 # is to be shown, circle indicates if the circles indicating the size of each 
 # plants is to be shown,.
-plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE){
+plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE, 
+                           col_circles = "#228B2280"){
   
   text_box <- function(x, y, labels, cex){
     sw   <- strwidth(labels)
@@ -305,11 +306,6 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
     }
   }
   
-  colores <- col2rgb(3:6)
-  colores <- apply(colores, 2, FUN = function(x)rgb(x[1]/255,
-                                                    x[2]/255,
-                                                    x[3]/255,
-                                                    alpha = 0.5)  )
   plot(com$x, com$y, col=com$ft, type="n", main=main, xlab="", ylab="",
        yaxt="n", xaxt="n", yaxs="i", xaxs="i",
        xlim = c(0,ws),
@@ -341,16 +337,16 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
       )){
         if (circle){
           plotrix::draw.circle(x = com$x[j]+k[1], y = com$y[j]+k[2], radius = com$sz[j], 
-                               col = colores[com$ft[j]])
+                               col = col_circles)
         }else{
-          points(x = com$x[j]+k[1], y = com$y[j]+k[2], col=com$ft, pch=19)
+          points(x = com$x[j]+k[1], y = com$y[j]+k[2], col = com$ft, pch=19)
         }
         
       }}
     else{
       if(circle){
         plotrix::draw.circle(x = com$x[j], y = com$y[j], radius = com$sz[j], 
-                             col = colores[com$ft[j]])
+                             col = col_circles)
       }else{
         points(com$x, com$y, col=com$ft, pch=19)
       }
