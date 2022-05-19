@@ -1,6 +1,6 @@
 #### Analysis of simulated populations over time
 
-results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2100_reps_20ws_50tsteps_23_seed.csv",
+results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_900_reps_20ws_50tsteps_23_seed.csv",
                               stringsAsFactors = F)
 
 # Time 0 is the population at initialization, before any competition occurs, so it
@@ -57,7 +57,7 @@ cor.test(x = results_over_time$coef_var,
 ###### esta fallando lo de abajo, los ejes del paneld erecho no quedan bieeeeeeeeen
 png("examples_curves_variation.png",
     width = 14, height = 12, units = "cm", res = 300)
-set.seed(26)
+set.seed(25)
 par(mar = c(5, 4, 4, 1) + 0.1)
 layout(mat = matrix(c(1, 2),  nrow = 1, ncol = 2),
        heights = c(2), widths = c(4, 1))
@@ -75,40 +75,45 @@ for (fre in simuls){
   hu<-hu+1
 }
 par(mar = c(10, 0 , 4, 3))
-plot(1, xlim = c(0, 0.5), ylim=c(0, 1), 
+plot(1, xlim = c(-0.05, 0.55), ylim=c(0, 1), 
      xlab="", ylab="", xaxt = "n", yaxt = "n", bty="n")
 
-axis_positions <- seq(from = 0, to = 0.5, length.out = 4)
-axis(side = 4, at = c(0, 1), labels = c("Lower limit", "Upper limit"), 
+
+variable_names <- c("mean_no_competitors",
+                    "sd_no_competitors", 
+                    "comp_symmetry")
+
+axis_positions <- seq(from = 0, to = 0.5, length.out = length(variable_names))
+axis(side = 4, at = c(0, 0.5, 1), line = -1, 
+     labels = c("Low", "Intermediate",  "High"), 
      las = 1, cex.axis = 0.5, tick = FALSE)
-axis(side = 1, at = axis_positions, labels = c("Spatial disarrangement", 
-                                               "Initial size variation",
-                                               "Overcrowding",
-                                               "Competition symmetry"), 
+axis(side = 1, at = axis_positions, labels = variable_names, 
      las = 2, cex.axis = 0.8, tick = FALSE)
 
 for (xcord in axis_positions){
   lines(x = c(xcord, xcord), y = c(0, 1), 
-        lty = 1, col = "grey" )
-  lines(x = c(xcord * 0.9, xcord * 1.1), y = c(1, 1), 
-        lty = 1, col = "grey" )
-  lines(x = c(xcord * 0.9, xcord * 1.1), y = c(0, 0), 
-        lty = 1, col = "grey" )
+        lty = 1, col = "black" )
+  lines(x = c(xcord - 0.05, xcord + 0.05), y = c(1, 1), 
+        lty = 1, col = "black" )
+  lines(x = c(xcord - 0.05, xcord + 0.05), y = c(0, 0), 
+        lty = 1, col = "black" )
   }
 hu <- 1
 for (fre in simuls){
-    points(axis_positions[1], results_over_time$world_reachability[results_over_time$re==fre][1]/max(results_over_time$world_reachability),
-           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
-           pch = "-", cex= 2)
-    points(axis_positions[2], results_over_time$max_initial_sz[results_over_time$re==fre][1]/max(results_over_time$max_initial_sz),
-           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
-           pch = "-", cex= 2)
-    points(axis_positions[3], results_over_time$n_overcrowding_plants[results_over_time$re==fre][1]/max(results_over_time$world_reachability),
-           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
-           pch = "-", cex= 2)
-    points(axis_positions[4], results_over_time$comp_symmetry[results_over_time$re==fre][1]/max(results_over_time$comp_symmetry),
-           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu],
-           pch = "-", cex= 2)
+  for (va in seq_along(variable_names)){
+    
+    value <- results_over_time[[variable_names[va]]][results_over_time$re==fre][1]
+    if (variable_names[va] == "comp_symmetry"){
+      if (value + 1e-16  > 1) {value <- 0.5 + (value / max(results_over_time$comp_symmetry) * 0.5)
+      }else{value <- value * 0.5 }
+      
+    }else{
+      value <- value / max(results_over_time[[variable_names[va]]])
+      }
+  
+    lines(c(axis_positions[va] - 0.04, axis_positions[va] + 0.04), c(value, value), 
+           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu], lwd = 3)
+    }
     hu<-hu+1
   }
 
