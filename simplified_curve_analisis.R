@@ -1,6 +1,6 @@
 #### Analysis of simulated populations over time
 
-results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_900_reps_20ws_50tsteps_23_seed.csv",
+results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2100_reps_20ws_50tsteps_23_seed.csv",
                               stringsAsFactors = F)
 
 # Time 0 is the population at initialization, before any competition occurs, so it
@@ -54,10 +54,9 @@ cor.test(x = results_over_time$coef_var,
          y = results_over_time$mean_competiton)
 
 ### plots f examples of curves 
-###### esta fallando lo de abajo, los ejes del paneld erecho no quedan bieeeeeeeeen
-png("examples_curves_variation.png",
+{png("examples_curves_variation.png",
     width = 14, height = 12, units = "cm", res = 300)
-set.seed(25)
+set.seed(27)
 par(mar = c(5, 4, 4, 1) + 0.1)
 layout(mat = matrix(c(1, 2),  nrow = 1, ncol = 2),
        heights = c(2), widths = c(4, 1))
@@ -65,13 +64,14 @@ plot(1, xlim = c(1, max(results_over_time$t)),
      ylim=c(0, 0.4), yaxs = "i", xaxs = "i",
      xlab="Time-step", ylab="Size Coefficient of Variation", )
 hu<-1
-simuls <- sample(1:max(results_over_time$re), size = 9)
+simuls <- c(1394, 1097, 1747, 655, 161, 793, 289, 181, 95) #sample(1:max(results_over_time$re), size = 9)
 
 for (fre in simuls){
   cvar <- results_over_time$coef_var[results_over_time$re==fre]
   t <- results_over_time$t[results_over_time$re==fre]
   lines(t, cvar, col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu], 
         lwd=2)
+  #text(t[31], cvar[31], labels = fre, col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu])
   hu<-hu+1
 }
 par(mar = c(10, 0 , 4, 3))
@@ -86,8 +86,11 @@ variable_names <- c("mean_no_competitors",
 axis_positions <- seq(from = 0, to = 0.5, length.out = length(variable_names))
 axis(side = 4, at = c(0, 0.5, 1), line = -1, 
      labels = c("Low", "Intermediate",  "High"), 
-     las = 1, cex.axis = 0.5, tick = FALSE)
-axis(side = 1, at = axis_positions, labels = variable_names, 
+     las = 1, cex.axis = 0.65, tick = FALSE)
+axis(side = 1, at = axis_positions, labels = do.call(expression, 
+                                                     c(bquote("Mean"~P[c]),
+                                                       bquote("Standard deviation "~P[c]), 
+                                                       bquote("Competition symmetry ("~theta~")"))), 
      las = 2, cex.axis = 0.8, tick = FALSE)
 
 for (xcord in axis_positions){
@@ -117,7 +120,7 @@ for (fre in simuls){
     hu<-hu+1
   }
 
-dev.off()
+dev.off()}
 
 
 
