@@ -288,7 +288,7 @@ generate_initial_points <- function(N, ws){
 # Function to plot a plant population, number indicate if the number of each plant 
 # is to be shown, circle indicates if the circles indicating the size of each 
 # plants is to be shown,.
-plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TRUE, 
+plot_plantcomm <- function(com, numbers = NULL, main="", ws = NULL, circle = TRUE, 
                            col_circles = "#228B2280"){
   
   text_box <- function(x, y, labels, cex){
@@ -315,6 +315,8 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
   
   for (j in 1:nrow(com)){
     
+    this_names <- if (!is.null(numbers)) numbers[j] else j
+    
     if (circle){
       at_border <- c(com[j, 1] + com[j, 4] > ws | com[j, 1] - com[j, 4] < 0,
                      com[j, 2] + com[j, 4] > ws | com[j, 2] - com[j, 4] < 0)
@@ -324,8 +326,7 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
       
     }
     
-    
-    
+
     if (any(at_border)){
       for(k in list(c(0,0),
                     c(ws,0),
@@ -355,48 +356,48 @@ plot_plantcomm <- function(com, numbers = FALSE, main="", ws = NULL, circle = TR
     letter_sz <- 0.9
     
     
-    if (numbers){
+    if (!is.null(numbers)){
       
       if (sum(at_border) == 0){
         if (circle){
-          text_box(x = com$x[j], y = com$y[j], labels = j, cex=letter_sz)
+          text_box(x = com$x[j], y = com$y[j], labels = this_names, cex=letter_sz)
         }else{
           text_box(x = com$x[j]+(ws-offst), y = com$y[j]+(ws-offst), 
-                   labels = j, cex=letter_sz)
+                   labels = this_names, cex=letter_sz)
         }
         
       }else if (sum(at_border)==2){
-        if (circle){text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
-          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+        if (circle){text_box(x = ws-offst, y = ws-offst, labels = this_names, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = this_names, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = this_names, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = this_names, cex=letter_sz)
         }else{
-          text_box(x = ws-offst, y = ws-offst, labels = j, cex=letter_sz)
-          text_box(x = ws-offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = offst, labels = j, cex=letter_sz)
-          text_box(x = offst, y = ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst, y = ws-offst, labels = this_names, cex=letter_sz)
+          text_box(x = ws-offst, y = offst, labels = this_names, cex=letter_sz)
+          text_box(x = offst, y = offst, labels = this_names, cex=letter_sz)
+          text_box(x = offst, y = ws-offst, labels = this_names, cex=letter_sz)
           
         }
         
       }else if (at_border[2]){
         if (circle){
-          text_box(x = com$x[j], ws-offst, labels = j, cex=letter_sz)
-          text_box(x = com$x[j], offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j], ws-offst, labels = this_names, cex=letter_sz)
+          text_box(x = com$x[j], offst, labels = this_names, cex=letter_sz)
         }else{
-          text_box(x = com$x[j]+ws-offst, ws-offst, labels = j, cex=letter_sz)
-          text_box(x = com$x[j]+ws-offst, offst, labels = j, cex=letter_sz)
+          text_box(x = com$x[j]+ws-offst, ws-offst, labels = this_names, cex=letter_sz)
+          text_box(x = com$x[j]+ws-offst, offst, labels = this_names, cex=letter_sz)
         }
         
         
       }else if (at_border[1]){
         
         if (circle){
-          text_box(x = ws-offst , y = com$y[j], labels = j, cex=letter_sz)
-          text_box(x = offst , y = com$y[j], labels = j, cex=letter_sz)
+          text_box(x = ws-offst , y = com$y[j], labels = this_names, cex=letter_sz)
+          text_box(x = offst , y = com$y[j], labels = this_names, cex=letter_sz)
           
         }else{
-          text_box(x = ws-offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
-          text_box(x = offst , y = com$y[j]+ws-offst, labels = j, cex=letter_sz)
+          text_box(x = ws-offst , y = com$y[j]+ws-offst, labels = this_names, cex=letter_sz)
+          text_box(x = offst , y = com$y[j]+ws-offst, labels = this_names, cex=letter_sz)
           
         }
         

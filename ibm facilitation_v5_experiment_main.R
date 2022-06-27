@@ -84,10 +84,10 @@ LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0,
                                                                  n_samples = n_reps))), # number of overcrowding plants
                       sample(c(uniform_LHS_sample_from_range(lower = 0,
                                                              upper = 1,  
-                                                             n_samples = n_reps/2),
+                                                             n_samples = n_reps %/% 2),
                                uniform_LHS_sample_from_range(lower = 1,  
                                                              upper = 100, 
-                                                             n_samples = n_reps/2))) # competition asymmetry parameter, divided en two ranges
+                                                             n_samples = n_reps %/% 2))) # competition asymmetry parameter, divided en two ranges
                       ),
                     nrow = n_reps)
 

@@ -2,7 +2,7 @@
 # of simluations
 library(tree)
 library(Bolstad)
-results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2100_reps_20ws_50tsteps_23_seed.csv",
+results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_8400_reps_20ws_50tsteps_23_seed.csv",
                           stringsAsFactors = F)
 
 set.seed(26)
@@ -221,6 +221,8 @@ hist(testing_repetitions_at_time_t$mean_no_competitors[false_asym])
 model_final_coefvar <- lm(coef_var~mean_no_competitors*sd_no_competitors-1,
                           data=only_last)
  summary(model_final_coefvar)
+ 
+ 
 # png("fimnal_coefvar_per_meancomp_symmetry.png",
 #     width = 24, height = 12, units = "cm",
 #     res = 300)
@@ -628,3 +630,35 @@ for (se in 1:(length(t)-1)){
 # legend("topright", legend = c("Asymmetric", "Symmetric"), 
 #        fill = c("red","blue"), cex=0.8)
 # }
+
+
+postscript_file <- TRUE
+if(postscript_file){grDevices::cairo_ps("final_coefvar_per_mean_sd_comp_symmetry.eps",
+                                        height = 5, width = 10,
+                                        bg = F,fallback_resolution = 500)
+}else{
+  png("final_coefvar_per_mean_sd_comp_symmetry.png",width = 140, height = 90, 
+      units = 'mm', res = 500)}
+only_last <-  results_over_time[results_over_time$t==max(results_over_time$t), ]
+# tiff("final_coefvar_per_mean_sd_comp_symmetry.tiff",
+#     width = 16, height = 8, units = "cm", res = 500)
+par(mfrow=c(1, 2))
+plot(x = only_last$mean_no_competitors, y = only_last$coef_var,
+     col = c("red", "blue")[only_last$comp_symmetry_factor],
+      pch=20, cex=0.2, xlab= bquote(Mean*phantom(1)*P[c]),
+     ylab="Size coefficient of variation")
+
+legend("topright", legend = c("Asymmetric", "Symmetric"),
+       fill = c("red","blue"), cex=0.8)
+
+plot(x = only_last$sd_no_competitors, y = only_last$coef_var,
+    col = c("red", "blue")[only_last$comp_symmetry_factor],
+
+     pch=20, cex=0.2,  xlab= bquote(SD*phantom(1)*P[c]) ,
+     ylab="Size coefficient of variation")
+
+legend("topright", legend = c("Asymmetric", "Symmetric"),
+       fill = c("red","blue"), cex=0.8)
+
+dev.off()
+

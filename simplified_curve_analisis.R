@@ -1,6 +1,6 @@
 #### Analysis of simulated populations over time
 
-results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_2100_reps_20ws_50tsteps_23_seed.csv",
+results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_8400_reps_20ws_50tsteps_23_seed.csv",
                               stringsAsFactors = F)
 
 # Time 0 is the population at initialization, before any competition occurs, so it
@@ -18,9 +18,14 @@ my_colors <- colorRampPalette(c("#440154FF", "#482878FF", "#3E4A89FF",
                                 "#35B779FF", "#6DCD59FF", "#B4DE2CFF",
                                 "#FDE725FF"))
   
-  
-png("coefvar_competiton_per_time.png",
-    width = 12, height = 12, units = "cm", res = 300)
+postscript_file <- TRUE
+if(postscript_file){grDevices::cairo_ps("coefvar_competiton_per_time.eps",
+                                        height = 5, width = 5,
+                                        bg = F,fallback_resolution = 600)
+}else{
+  png("coefvar_competiton_per_time.png",
+      width = 12, height = 12, units = "cm", res = 300)}
+
 
 layout(mat = matrix(c(1, 1, 1, 0, 2, 0),  nrow = 3, ncol = 2),
        heights = c(2,3, 2), widths = c(7,1))
@@ -54,9 +59,19 @@ cor.test(x = results_over_time$coef_var,
          y = results_over_time$mean_competiton)
 
 ### plots f examples of curves 
-{png("examples_curves_variation.png",
-    width = 14, height = 12, units = "cm", res = 300)
-set.seed(27)
+
+
+{
+  postscript_file <- TRUE
+  if(postscript_file){grDevices::cairo_ps("examples_curves_variation.eps",
+                                          height = 5, width = 5,
+                                          bg = F,fallback_resolution = 500)
+  }else{
+    png("examples_curves_variation.png",
+        width = 12, height = 12, units = "cm", res = 300)}
+  
+  
+set.seed(26)
 par(mar = c(5, 4, 4, 1) + 0.1)
 layout(mat = matrix(c(1, 2),  nrow = 1, ncol = 2),
        heights = c(2), widths = c(4, 1))
@@ -64,7 +79,7 @@ plot(1, xlim = c(1, max(results_over_time$t)),
      ylim=c(0, 0.4), yaxs = "i", xaxs = "i",
      xlab="Time-step", ylab="Size Coefficient of Variation", )
 hu<-1
-simuls <- c(1394, 1097, 1747, 655, 161, 793, 289, 181, 95) #sample(1:max(results_over_time$re), size = 9)
+simuls <- sample(1:max(results_over_time$re), size = 9)
 
 for (fre in simuls){
   cvar <- results_over_time$coef_var[results_over_time$re==fre]
@@ -74,7 +89,7 @@ for (fre in simuls){
   #text(t[31], cvar[31], labels = fre, col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu])
   hu<-hu+1
 }
-par(mar = c(10, 0 , 4, 3))
+par(mar = c(5, 0 , 4, 3))
 plot(1, xlim = c(-0.05, 0.55), ylim=c(0, 1), 
      xlab="", ylab="", xaxt = "n", yaxt = "n", bty="n")
 
@@ -89,17 +104,17 @@ axis(side = 4, at = c(0, 0.5, 1), line = -1,
      las = 1, cex.axis = 0.65, tick = FALSE)
 axis(side = 1, at = axis_positions, labels = do.call(expression, 
                                                      c(bquote("Mean"~P[c]),
-                                                       bquote("Standard deviation "~P[c]), 
-                                                       bquote("Competition symmetry ("~theta~")"))), 
-     las = 2, cex.axis = 0.8, tick = FALSE)
+                                                       bquote("SD "~P[c]), 
+                                                       bquote(theta))), 
+     las = 2, cex.axis = 0.8, tick = FALSE, line = -1)
 
 for (xcord in axis_positions){
   lines(x = c(xcord, xcord), y = c(0, 1), 
-        lty = 1, col = "black" )
+        lty = 1, col = "black", lwd = 1.2)
   lines(x = c(xcord - 0.05, xcord + 0.05), y = c(1, 1), 
-        lty = 1, col = "black" )
+        lty = 1, col = "black", lwd = 1.2)
   lines(x = c(xcord - 0.05, xcord + 0.05), y = c(0, 0), 
-        lty = 1, col = "black" )
+        lty = 1, col = "black", lwd = 1.2)
   }
 hu <- 1
 for (fre in simuls){
@@ -115,7 +130,7 @@ for (fre in simuls){
       }
   
     lines(c(axis_positions[va] - 0.04, axis_positions[va] + 0.04), c(value, value), 
-           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu], lwd = 3)
+           col = RColorBrewer::brewer.pal(length(simuls), "Set1")[hu], lwd = 3.4)
     }
     hu<-hu+1
   }
@@ -180,28 +195,15 @@ bayesian_posterior_parameter <- function(values,
                      return(sum(is_x & is_y)) }))
     prior <- prior/N
     
-   
-    
     likelyhood <- outer(X = 1:n_categ,  
                         Y = 1:n_categ_joint,
                         FUN = Vectorize(function(x, y){
                           is_x <- (values >= ranges_init[x]) & (values < ranges_init[x+1])
                           is_y <- (values_for_joint >= ranges_init_joint[y]) & (values_for_joint < ranges_init_joint[y+1])
                           return(sum(is_x & is_y)) }))
-    
+  
     likelyhood <- likelyhood/N
-    
     posterior <- (prior*likelyhood)/sum(prior*likelyhood)
-
-    # print(n_categ_joint)
-    # print(ranges_init_joint)
-    # 
-    # print(n_categ)
-    # print(ranges_init)
-    # 
-    # 
-    # print(dim(posterior))
-    
     colnames(posterior) <- ranges_init_joint[1:n_categ_joint]
     rownames(posterior) <- ranges_init[1:n_categ]
     
@@ -227,37 +229,106 @@ variables <- c('Spatial disarrangement' = "world_reachability",
                #'Ind. variation in growth rate' = "indiviudal_var_growth_rate"
                )
 
-table(curves_description$type)
+clasfify_Curve <- function(cvar, t, full_classification = TRUE){
+  #these are indexes
+  init_t <- which(t==1)
+  final_t <- length(t)
+  
+  final_cvar <- cvar[final_t]
+  initial_cvar <- cvar[init_t]
+  
+  significativos <- abs(c(NA, cvar[-length(cvar)]) - cvar) > 1e-5
+  
+  if (all(!(significativos[-1]))) {return("flat")}
+  
+  if ( final_cvar > initial_cvar) {
+    type_curve <- "inc"
+    aumenta_coefvar <- c(NA, cvar[-length(cvar)]) < cvar  
+    
+  }else{
+    aumenta_coefvar <- c(NA, cvar[-length(cvar)]) > cvar 
+    type_curve <- "dec"}
+  state <- aumenta_coefvar[2]
+  
+  inflpts <- c()
+  
+  for (i in 3:length(aumenta_coefvar)){
+    
+    if (state != aumenta_coefvar[i] & significativos[i]){
+      state <- aumenta_coefvar[i]
+      inflpts <- c( inflpts, state )# esto va a decir si es concavo o convexo la diferencia
+    }
+  }
+  #  print(aumenta_coefvar)
+  #inflpts <- if (length(inflpts)>0) inflpts[seq(from= 1, to=length(inflpts), by=2)]
+  
+  if (full_classification) {
+    for (i in inflpts){
+      type_curve <- paste(type_curve, if (i) "_convex" else "_concave", sep="")}
+    #type_curve <- paste(type_curve, if (i) "_c" else "_c", sep="")}
+  }
+  
+  type_curve
+}
 
-type_simul <- "inc_c"
+n_sims <- max(results_over_time$re)
+
+curves_description <- data.frame(
+  type = character(n_sims),
+  mean_potential_competitors  = numeric(n_sims),
+  sd_potential_competitors  = numeric(n_sims),
+  world_reachability= numeric(n_sims),
+  max_initial_sz = numeric(n_sims),
+  overcrowding = numeric(n_sims),
+  comp_symmetry= numeric(n_sims),
+  stringsAsFactors = F)
+
+for (q in 1:n_sims){
+  one_curve <- results_over_time[results_over_time$re==q, ]
+  
+  curves_description[q, ] <- c(clasfify_Curve(cvar = one_curve$coef_var, 
+                                              t = one_curve$t, 
+                                              full_classification = F)
+                               , one_curve[1, 8:13])
+}
+
+
+table(curves_description$type)
+type_simul <- "dec"
 
 fr <- which(curves_description$type==type_simul)
-subset <- curves_description[1:nrow(curves_description) %in% fr ,]
-
-
+simulations_subset <- curves_description[1:nrow(curves_description) %in% fr ,]
 combinations <- combn(1:4, 2)
 
 range_for_assymetry <- c(seq(0, 1, length.out=11), seq(1, 100, length.out=11)[-c(1, 11)])
 
 range_for_overcrowding <- seq(from=-10, to=14, by=1)
 
- png(paste("parameter_posterior_joint_symm_ovcr_", type_simul, ".png", sep="") ,
-     width = 18, height = 12, units = "cm",
-     res = 300)
-{
-layout(mat = matrix(c(1, 1, 2, 2, 3,  3,  4,  4, 5, 5, 6, 6, 0,  7, 7, 0), 
-                    nrow = 4, 
-                    ncol = 4),
-       heights = c(2, 2, 2, 2),
-       widths = c(3, 3, 3, 1))
+postscript_file <- TRUE
+if(postscript_file){grDevices::cairo_ps(paste("parameter_posterior_joint_symm_ovcr_", type_simul, ".eps", sep=""),
+                                        height = 6, width = 9,
+                                        bg = F, fallback_resolution = 500)
+}else{
+  png(paste("parameter_posterior_joint_symm_ovcr_", type_simul, ".png", sep=""),width = 140, height = 90, 
+      units = 'mm', res = 500)}
 
+# 
+#  png(paste("parameter_posterior_joint_symm_ovcr_", type_simul, ".png", sep="") ,
+#      width = 18, height = 12, units = "cm",
+#      res = 300)
+{
+# layout(mat = matrix(c(1, 1, 2, 2, 3,  3,  4,  4, 5, 5, 6, 6, 0,  7, 7, 0), 
+#                     nrow = 4, 
+#                     ncol = 4),
+#        heights = c(2, 2, 2, 2),
+#        widths = c(3, 3, 3, 1))
+par(mfrow = c(2, 3))
 for (k in 1:ncol(combinations)){
   
   variables_for_joint <- variables[combinations[, k]]
   n_groups_paramter <- 13
   ev <- (n_groups_paramter-1)/2
     {
-  
   range_this_rep <- if  (variables_for_joint[1] == "comp_symmetry"
                          ) range_for_assymetry else if (variables_for_joint[1] == "overcrowding"
                                                         ) range_for_overcrowding else NULL
@@ -267,17 +338,17 @@ for (k in 1:ncol(combinations)){
       ) range_for_overcrowding else NULL
       
   
-      prob_joint <- bayesian_posterior_parameter(values = subset[[variables_for_joint[1]]], 
+      prob_joint <- bayesian_posterior_parameter(values = simulations_subset[[variables_for_joint[1]]], 
                                        total_values =  curves_description[[variables_for_joint[1]]],
-                                       values_for_joint = subset[[variables_for_joint[2]]], 
+                                       values_for_joint = simulations_subset[[variables_for_joint[2]]], 
                                        total_values_for_joint = curves_description[[variables_for_joint[2]]],
                                        ranges_init = range_this_rep ,
                                        ranges_init_joint = range_this_rep_joint,
                                        n_categ = 10, n_categ_joint = 10)
   max_colobar <- max(prob_joint$posterior)
   palette <- colorRampPalette(c('#ffffff','#200080'))(10)
-  par(c(3, 4, 3, 1) + 0.1)
-  image(prob_joint$posterior, col = palette, axes=FALSE,
+  par(mar = c(3, 4, 3, 1) + 0.1)
+  image(prob_joint$posterior, col = palette, axes=FALSE, 
         main="", zlim = c(0, max_colobar))
   
   grid(nx = nrow(prob_joint$posterior), ny = ncol(prob_joint$posterior),
@@ -286,81 +357,78 @@ for (k in 1:ncol(combinations)){
   box(which = "plot", lty = "solid")
   
   axis(2, at = seq(0,1, length.out = ncol(prob_joint$posterior) ), 
-       labels = round(as.numeric(colnames(prob_joint$posterior)), 2),
-      lwd = 0, lwd.ticks = 1, cex.axis = 0.75)
+       labels = round(as.numeric(colnames(prob_joint$posterior)), 1),
+      lwd = 0, lwd.ticks = 1, cex.axis = 0.7, las = 2)
   
   axis(1, at = seq(0, 1, length.out=nrow(prob_joint$posterior) ), 
        labels = round(as.numeric(rownames(prob_joint$posterior)), 2),
-       lwd = 0, lwd.ticks = 1, cex.axis = 0.75)
+       lwd = 0, lwd.ticks = 1, cex.axis = 0.7)
   
   mtext(1, text = names(variables_for_joint[1]), line = 2, cex=0.8)
   mtext(2, text = names(variables_for_joint[2]), line = 2, cex=0.8)
   }
 
 }
-par(mar=c(2, 1, 1, 4))
+# par(mar=c(2, 1, 1, 4))
+# 
+# pts_colorbar <- seq(0, max_colobar, length.out = 10)
+# image(matrix(pts_colorbar, nrow = 1), axes=F,
+#       col = palette, zlim=c(0, max_colobar))
+# box(which = "plot", lty = "solid")
+# 
+# axis(4, at = seq(0, 1, length.out = length(pts_colorbar)), 
+#      labels = round(pts_colorbar, 2), 
+#      lwd = 0, lwd.ticks = 1)
+# 
+# mtext(text = "Probability", side = 2, cex = 0.8, line = 1)
 
-pts_colorbar <- seq(0, max_colobar, length.out = 10)
-image(matrix(pts_colorbar, nrow = 1), axes=F,
-      col = palette, zlim=c(0, max_colobar))
-box(which = "plot", lty = "solid")
-
-axis(4, at = seq(0, 1, length.out = length(pts_colorbar)), 
-     labels = round(pts_colorbar, 2), 
-     lwd = 0, lwd.ticks = 1)
-
-mtext(text = "Probability", side = 2, cex = 0.8, line = 1)
-
-
-
-mtext(type_simul, side = 3, line = -3,
-      outer = TRUE)
  }
  
 dev.off()
+
+
+# png(paste("parameter_posterior", type_simul, ".png", sep="") , 
+#     width = 24, height = 12, units = "cm",
+#     res = 300)
+# {par(mfrow=c(2,2),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
 # 
-# # png(paste("parameter_posterior", type_simul, ".png", sep="") , 
-# #     width = 24, height = 12, units = "cm",
-# #     res = 300)
-{par(mfrow=c(2,2),  mar = c(4,4,2,1),  cex.lab=1.1, oma = c(4,1,1,1))
-
-  for (va in c(1,2,3,4)){#seq_along(variables)){
-
-    if (variables[va] =="comp_symmetry"){
-      prob <- bayesian_posterior_parameter(values = subset$comp_symmetry,
-                                           total_values =  curves_description$comp_symmetry,
-                                           ranges_init =  range_for_assymetry,
-                                           n_categ = length(range_for_assymetry))
-
-      }else if (variables[va] =="overcrowding"){
-        prob <- bayesian_posterior_parameter(values = subset$overcrowding,
-                                             total_values =  curves_description$overcrowding,
-                                             ranges_init =  range_for_overcrowding,
-                                             n_categ = length(range_for_overcrowding))
-
-
-    }else{
-      prob <- bayesian_posterior_parameter(values = subset[[variables[va]]],
-                                           total_values =  curves_description[[variables[va]]],
-                                           n_categ = 12)
-      }
-    barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3),
-            names.arg = round(prob$param_vals,2),xlab=names(variables)[va],
-            main="", ylab="Probability")
-
-    barplot(prob$prior, add = T, col = rgb(0, 1 , 0, alpha = 0.3))
-
-  }
-
-  par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
-  plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
-  legend('bottom',legend = c("Posterior", "Prior"),
-         fill=c(rgb(red = c(0, 0), green = c(0, 1), blue = c(1, 0),
-                    alpha = 0.5 )), xpd = TRUE, horiz = TRUE, cex = 1)
-
-  mtext(type_simul, side = 3, line = - 2,
-        outer = TRUE)
-}
+#   for (va in seq_along(variables)){
 # 
-# #dev.off()
+#     if (variables[va] =="comp_symmetry"){
+#       prob <- bayesian_posterior_parameter(values = simulations_subset$comp_symmetry,
+#                                            total_values =  curves_description$comp_symmetry,
+#                                            ranges_init =  range_for_assymetry,
+#                                            n_categ = length(range_for_assymetry))
+# 
+#       }else if (variables[va] =="overcrowding"){
+#         prob <- bayesian_posterior_parameter(values = simulations_subset$overcrowding,
+#                                              total_values =  curves_description$overcrowding,
+#                                              ranges_init =  range_for_overcrowding,
+#                                              n_categ = length(range_for_overcrowding))
+# 
+# 
+#     }else{
+#       prob <- bayesian_posterior_parameter(values = simulations_subset[[variables[va]]],
+#                                            total_values =  curves_description[[variables[va]]],
+#                                            n_categ = 12)
+#       }
+#     barplot(prob$posterior, col = rgb(0, 0 , 1, alpha = 0.3),
+#             names.arg = round(prob$param_vals,2),xlab=names(variables)[va],
+#             main="", ylab="Probability")
+# 
+#     barplot(prob$prior, add = T, col = rgb(0, 1 , 0, alpha = 0.3))
+# 
+#   }
+# 
+#   par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+#   plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
+#   legend('bottom',legend = c("Posterior", "Prior"),
+#          fill=c(rgb(red = c(0, 0), green = c(0, 1), blue = c(1, 0),
+#                     alpha = 0.5 )), xpd = TRUE, horiz = TRUE, cex = 1)
+# 
+#   mtext(type_simul, side = 3, line = - 2,
+#         outer = TRUE)
+# }
+# 
+# dev.off()
 # 
