@@ -1,25 +1,20 @@
-
-#C:\Users\hugos\Desktop\phd\data\renton_model\experimento
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import csv
 
-# this code was used to fin the configuration of N points
+# This code was used to find the configuration of N points
 # such that the distance to their four closest neighbors is the same
-# in a torus world
+# in a square torus with side ws = 20
 
 
 def distances_torus(x, y, ws):
 	x1, x2 = np.meshgrid(x, x)
 	dx = abs(x1 - x2)
-	### this wraps the interaction effects
 	dx = np.where(dx > ws/2, ws - dx, dx)
 	y1, y2 = np.meshgrid(y, y)
-
 	dy = abs(y1 - y2)
 	dy = np.where(dy > ws/2, ws - dy, dy)
-
 	dists = np.sqrt(dx**2 + dy**2)       
 	return dists
 
@@ -74,9 +69,9 @@ def plot_transformation(cordinates, parameters):
 
 ws = 20
 n_row_fst = 41
-ya_estan = [int(i**2) for i in range(1, 7) ]# 4 , 9 ,16 ,25 ,36 ,49 , 8 ,18 ,32, 50, 72, 98, 20,5,13,25,40,10,34,17,29,26,37,8,15,24,16,9,36,35]
+configs_found = [int(i**2) for i in range(1, 7) ]
 
-def search_inside_limits(n_row_fst, ws, level, position, ya_estan ):
+def search_inside_limits(n_row_fst, ws, level, position, configs_found ):
 	x = np.linspace(-30, 30, n_row_fst + 1)
 	y = np.linspace(-30, 30, n_row_fst + 1)
 
@@ -94,8 +89,6 @@ def search_inside_limits(n_row_fst, ws, level, position, ya_estan ):
 	# 	plt.xlim([0, ws])
 	# 	plt.ylim([0, ws])
 	# plt.show()
-	#plot_transformation(cordinates = coordinates, parameters= [0.8, 6.666667, 6.666667, 1.5])# para compara con 
-	#plot_transformation(cordinates = coordinates, parameters= [math.pi/4, 0, 0, 1.5])# para compara con R
 
 	found = []
 
@@ -118,11 +111,11 @@ def search_inside_limits(n_row_fst, ws, level, position, ya_estan ):
 						sum_cost += np.var(fila[1:5])  #sum(abs(fila[1:5] - expected_dif_of_4_closest) )
 					#print(sum_cost)
 
-					if sum_cost < 0.1 and  np.shape(dist_mat)[0]<= 50 and (not np.shape(dist_mat)[0] in ya_estan):
+					if sum_cost < 0.1 and  np.shape(dist_mat)[0]<= 50 and (not np.shape(dist_mat)[0] in configs_found):
 						print("encontre una de " + str(np.shape(dist_mat)[0]))
 						print(i)
 						found.append([lev, np.shape(dist_mat)[0], parameters, n_row_fst ])
-						ya_estan.append(np.shape(dist_mat)[0])
+						configs_found.append(np.shape(dist_mat)[0])
 	return found
 
 
@@ -130,7 +123,7 @@ busquedas = [
 			[39, [1,13], [1,13]],
 			[61, [1,13], [1,13]],
 			[60, [1,13], [1,13]],
-#			[40, [1,9], [1,9]], # primero n_row_fst, luego level, luego position
+#			[40, [1,9], [1,9]], # frist n_row_fst, then level, then position
 #			  [40, [9,18], [1,9]],
 #			  [40, [1,9], [9,16]],
 #			  [41, [1,9], [1,9]],
@@ -139,10 +132,10 @@ busquedas = [
 
 
 found=[]
-for caso in busquedas:
-	esta_vez = search_inside_limits(caso[0], ws=ws, level= caso[1], position=caso[2], ya_estan=ya_estan )
+for case in busquedas:
+	esta_vez = search_inside_limits(case[0], ws=ws, level= case[1], position=case[2], configs_found=configs_found )
 	found = found + esta_vez
-	ya_estan.append([i[0] for i in esta_vez])
+	configs_found.append([i[0] for i in esta_vez])
 
 
 rows = []
@@ -161,11 +154,11 @@ for n in found:
 	cordinates = np.array([Xf, Yf, [1]*len(Xf) ])
 
 
-	for i in np.linspace(0.7 * this_scale, 1.3 * this_scale, 10000):#poner 8000
+	for i in np.linspace(0.7 * this_scale, 1.3 * this_scale, 10000):
 		parameters = [n[2][0], 0, 0 ,  i]
-		transformed = transform_coordinates(cordinates=cordinates, parameters=parameters, lvl=n[0])
-		transformed = transformed[np.all(transformed[:,0:2] >= 0, axis=1) , :]
-		transformed = transformed[np.all(transformed[:,0:2] < ws, axis=1 ) , :]
+		transformed = transform_coordinates(cordinates = cordinates, parameters = parameters, lvl = n[0])
+		transformed = transformed[np.all(transformed[:,0:2] >= 0, axis = 1) , :]
+		transformed = transformed[np.all(transformed[:,0:2] < ws, axis = 1) , :]
 		dist_mat = distances_torus(transformed[:,0], transformed[:,1], ws)
 		sum_cost = 0	
 		for i in dist_mat:
@@ -189,6 +182,6 @@ for n in found:
 
 writer = csv.writer(open("configurations/point_configurations_improved.csv", mode="w", newline=""))
 writer.writerows(rows)
-print("fin")
+print("End")
 
 

@@ -9,24 +9,14 @@
 # en este quiero probar las condiciones que dice Weiner1990 sobre el efecto
 # de las interactiones y su simetria en la variacion de 
 
-source("circles_area_of_overlap.R")
+library(CirclesIntersections)
+source("intersection_three_circles.R")
+
 #source("get_ppis.R")
 
 seed_value <-23
 set.seed(seed_value)
 
-#esta funcion va a hacer que un conjunto de coordenadas xy se ajusten 
-# de tarl manera que center_x y center_y esten en el centro del mundo
-# y asi el wrapping no afecte el calculo de areas, y regresa todas con la nueva
-# escala, con el centro como primer elemento
-center_world_arround <- function(center_xy, ws, coords){
-  row_number <- which(rownames(coords)==as.character(center_xy))
-  x_offset <- (ws/2) - coords$x[row_number]
-  y_offset <- (ws/2) - coords$y[row_number]
-  coords$x <- (coords$x + x_offset) %% ws
-  coords$y <- (coords$y + y_offset) %% ws
-  coords
-}
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -39,7 +29,7 @@ ws <- 20 # world size
 
 timesteps <- 50   # length of each run
 
-n_reps <- 2100 # number of LHS samples
+n_reps <- 100 # number of LHS samples
   
 # The  number of plants of a population that would have just enough resources is
 intermediate_pop <- 16
