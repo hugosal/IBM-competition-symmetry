@@ -3,7 +3,7 @@
 
 library(animation)
 library(CirclesIntersections)
-source("intersection_three_circles.R")
+source("auxiliary_functions.R")
 
 # world size 
 ws <- 20

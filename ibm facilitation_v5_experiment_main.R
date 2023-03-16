@@ -10,11 +10,11 @@
 # de las interactiones y su simetria en la variacion de 
 
 library(CirclesIntersections)
-source("intersection_three_circles.R")
+source("auxiliary_functions.R")
 
 #source("get_ppis.R")
 
-seed_value <-23
+seed_value <-26
 set.seed(seed_value)
 
 
@@ -29,7 +29,7 @@ ws <- 20 # world size
 
 timesteps <- 50   # length of each run
 
-n_reps <- 100 # number of LHS samples
+n_reps <- 8000 # number of LHS samples
   
 # The  number of plants of a population that would have just enough resources is
 intermediate_pop <- 16
@@ -39,12 +39,12 @@ max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es u
 
 
 ###### lo que este dentro de esta seccion es solo para hacer el arbol complicandose
-vector_dec_from_bin <- numeric(2**4)
-binarynames <- sapply(X = 1:length(vector_dec_from_bin),
-                                        FUN = function(x){
-                             bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
-                             substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
-var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
+# vector_dec_from_bin <- numeric(2**4)
+# binarynames <- sapply(X = 1:length(vector_dec_from_bin),
+#                                         FUN = function(x){
+#                              bin <- paste(rev(as.integer(intToBits(x))), collapse="") 
+#                              substr(bin, start = nchar(bin) - 4 + 1 , stop = nchar(bin))})
+# var_to_include <- lapply(binarynames, function(x) strsplit(x, "")[[1]]==1)
 
 # for(vars_t_inc in seq_along(var_to_include)) {
  # print(paste('##################', vars_t_inc))
@@ -156,10 +156,10 @@ for (re in 1:nrow(LHS_param)){
     
     n <- nrow(plantcomm)
     
-    critical_distance <- max_S * 2
-    
-    mean_potential_competitors <- mean(apply(dists < critical_distance, MARGIN = 1, sum) - 1)
-    sd_potential_competitors <- sd(apply(dists < critical_distance, MARGIN = 1, sum) - 1)
+    critical_distance <- outer(plantcomm$sz, plantcomm$sz, "+")   #max_S * 2
+    neighbours <- apply(dists < critical_distance, MARGIN = 1, sum) - 1
+    mean_neighbours <- mean(neighbours)
+    sd_neighbours <- sd(neighbours)
     
     # record data at time 0: before plants start interacting
     results_over_time[counter, ] <- c(re, 
@@ -168,8 +168,8 @@ for (re in 1:nrow(LHS_param)){
                                       sd(plantcomm$sz), 
                                       sum(pi * plantcomm$sz**2), 
                                       NA,
-                                      mean_potential_competitors,
-                                      sd_potential_competitors)
+                                      mean_neighbours,
+                                      sd_neighbours)
     counter <- counter + 1
   
   for (t in 1:timesteps){
@@ -293,14 +293,19 @@ for (re in 1:nrow(LHS_param)){
   	
   	plantcomm$sz = plantcomm$sz + indgr
   	
+  	critical_distance <- outer(plantcomm$sz, plantcomm$sz, "+")   #max_S * 2
+  	neighbours <- apply(dists < critical_distance, MARGIN = 1, sum) - 1
+  	mean_neighbours <- mean(neighbours)
+  	sd_neighbours <- sd(neighbours)
+  	
   	results_over_time[counter, ] <- c(re, 
   	                                  t, 
   	                                  mean(plantcomm$sz), 
   	                                  sd(plantcomm$sz), 
                                       sum(pi * plantcomm$sz**2), 
                                       mean(competition_effect),
-  	                                  mean_potential_competitors,
-  	                                  sd_potential_competitors)
+  	                                  mean_neighbours,
+  	                                  sd_neighbours)
   	counter <- counter + 1
 
   }
