@@ -41,7 +41,7 @@ generate_initial_points <- function(N, ws){
 }
 
 ws <- 20 # world size 
-N <- 40
+N <- 25
 points_initial <- generate_initial_points(N = N, ws = ws)
 
 spatstats_initial_points <- ppp(x = points_initial[,1], 
@@ -73,6 +73,7 @@ for( world_reachablity in c(0, 0.5,  1, 2, 5, 10, 15)){
         line = - 2,
         outer = TRUE)
   par(mar=c(5, 4, 4, 2) + 0.1)
+  Kest_out <-  Kest(spatstats_second_points, correction = "none" )
   plot(Kest(spatstats_second_points, correction = "none" ), 
        main = "")
   
@@ -80,12 +81,8 @@ for( world_reachablity in c(0, 0.5,  1, 2, 5, 10, 15)){
   
 }
 
-
-
-
 points_after_moving <- points_initial
 
-  
   points_after_moving[, 1] <- c(rnorm(n = 20, mean = 15, sd = 2 ),
                                 rnorm(n = 20, mean = 0, sd = 1 )) %% ws
   points_after_moving[, 2] <- c(rnorm(n = 20, mean = 15, sd = 3 ),
@@ -95,9 +92,7 @@ points_after_moving <- points_initial
   spatstats_second_points <- ppp(x = points_after_moving[,1], 
                                  y = points_after_moving[,2], c(0, ws), c(0, ws))
   
-  png("randomness_very_cumpled3.png",   
-      width = 24, height = 12, units = "cm",
-      res = 300)
+
   par(mfrow=c(1,2))
   par(mar=c(3, 3, 3, 3))
   plot(points_after_moving[,1],points_after_moving[,2],
@@ -106,8 +101,7 @@ points_after_moving <- points_initial
   par(mar=c(5, 4, 4, 2) + 0.1)
   plot(Kest(spatstats_second_points, correction = "none" ), 
        main = "")
-  
-  dev.off()
+
   
 
 
