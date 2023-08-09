@@ -18,10 +18,17 @@ def distances_torus(x, y, ws):
 	dists = np.sqrt(dx**2 + dy**2)       
 	return dists
 
-def transform_coordinates(cordinates, parameters, lvl):
-	theta_N, centerx, centery, scal = parameters
+# Transform the parameters aplying a rotation, translation and scaling according to parameters
+# levelx, levely, centerx, centery, scale
+def transform_coordinates(cordinates, parameters):
+	levelx, levely, centerx, centery, scal = parameters
+	# co/ca, co = levy = levely, ca = levx = levely + levelx
+	
+	# The rotation angle is that of a triangle with sidey = levely + levelx, 
+	# and sidey  = levely. This arrange causes the rotation to move a point at levely, (levely+levelx) 
+	# to the x axis, and since there is symmetry, we only search for angles from 0 to pi/4. 
 
-	theta = -math.atan(lvl/(lvl+theta_N))
+	theta = -math.atan(levely/(levely+levelx))
 	
 	Rot = np.array([[math.cos(theta), math.sin(theta), 0], 
 	                [-math.sin(theta),  math.cos(theta), 0],
@@ -39,124 +46,99 @@ def transform_coordinates(cordinates, parameters, lvl):
 	                  [0, scal, 0],
 	                  [0, 0, 1]])
 
-
-	transformed = np.matmul(transit_vuelta, cordinates) #llevar al inicio
-
-	transformed = np.matmul(scale, transformed) # escalar
-
-	transformed = np.matmul(Rot, transformed) # rotar en contra de sentido de reloj
-
-	transformed = np.matmul(transit_ida, transformed)# regresar a centro original
-
+	transformed = np.matmul(transit_vuelta, cordinates) 
+	transformed = np.matmul(scale, transformed)
+	transformed = np.matmul(Rot, transformed)
+	transformed = np.matmul(transit_ida, transformed)
 	transformed=transformed.transpose()
 
 	return transformed
 
-def plot_transformation(cordinates, parameters):
-	
-	transformed = transform_coordinates(cordinates=cordinates, parameters=parameters)
-	
-	transformed = transformed[np.all(transformed[:,0:2] >= 0, axis=1) , :]
-	transformed = transformed[np.all(transformed[:,0:2] < ws, axis=1 ) , :]
 
-	plt.scatter(transformed[:,0], transformed[:,1])
-	for i in range(len(transformed[:,0])):
-		plt.annotate(str(i), xy=(transformed[i,0] , transformed[i,1]) )
-	plt.xlim([0, ws])
-	plt.ylim([0, ws])
-	plt.show()
+ws = 20 #world size 
 
-
-ws = 20
-n_row_fst = 41
+# Add square numbers to not find trivial cases
 configs_found = [int(i**2) for i in range(1, 7) ]
 
-def search_inside_limits(n_row_fst, ws, level, position, configs_found ):
-	x = np.linspace(-30, 30, n_row_fst + 1)
-	y = np.linspace(-30, 30, n_row_fst + 1)
+# Search inside a range of conditions looping over scaling vand rotations.
+# The points are transformed, and only the ones inside the 2D world are considered.
+# If the sum of the variance of the distance to each point to its four closest neighbours
+# is low, add that transformation to check later
 
+def search_inside_limits(number_points_per_side, ws, positions_x, positions_y, configs_found):
+	x = np.linspace(-30, 30, number_points_per_side + 1)
+	y = np.linspace(-30, 30, number_points_per_side + 1)
 	X, Y = np.meshgrid(x[:-1], y[:-1])
-
-	Xf = X.flatten(order='A')
-	Yf = Y.flatten(order='A')
-
+	Xf = X.flatten(order = 'A')
+	Yf = Y.flatten(order = 'A')
 	cordinates = np.array([Xf, Yf, [1]*len(Xf) ])
-	#print(cordinates)
-
-	# plt.scatter(cordinates[0,:], cordinates[1,:])
-	# for i in range(len(cordinates[0,:])):
-	# 	plt.annotate(str(i), xy=(cordinates[0,i] , cordinates[1,i]) )
-	# 	plt.xlim([0, ws])
-	# 	plt.ylim([0, ws])
-	# plt.show()
-
 	found = []
+	for px in range(positions_x[0], positions_x[1]): 
+		for py in range(positions_y[0], positions_y[1]):
+			for s in np.linspace(2, 7, 3000):
+				# co/ca, co = levy = levely, ca = levx = levely + levelx
+				parameters = [px, py, 0, 0,  s]
+				transformed = transform_coordinates(cordinates = cordinates, 
+													parameters = parameters)
+				transformed = transformed[np.all(transformed[:,0:2] >= 0, axis = 1), :]
+				transformed = transformed[np.all(transformed[:,0:2] < ws, axis = 1), :]
 
-	for j in range(position[0], position[1]):
-		print(j)
-		for lev in range(level[0], level[1]):
-			for i in np.linspace(2, 7, 3000):# poner 5000
-				#parameters = [j, 0, 0 ,  i]# asi estaba
-				parameters = [j, 0, 0 ,  i]
-				transformed = transform_coordinates(cordinates=cordinates, parameters=parameters, lvl=lev)
-				transformed = transformed[np.all(transformed[:,0:2] >= 0, axis=1) , :]
-				transformed = transformed[np.all(transformed[:,0:2] < ws, axis=1 ) , :]
 				dist_mat = distances_torus(transformed[:,0], transformed[:,1], ws)
-				#plot_transformation(cordinates = cordinates, parameters= parameters)# para compara con R
 
 				if np.shape(dist_mat)[0] >= 4 and np.shape(dist_mat)[0] <= 40 :
 					sum_cost = 0		
 					for b in dist_mat:
 						fila = np.sort(b)
-						sum_cost += np.var(fila[1:5])  #sum(abs(fila[1:5] - expected_dif_of_4_closest) )
-					#print(sum_cost)
+						sum_cost += np.var(fila[1:5])
 
 					if sum_cost < 0.1 and  np.shape(dist_mat)[0]<= 50 and (not np.shape(dist_mat)[0] in configs_found):
-						print("encontre una de " + str(np.shape(dist_mat)[0]))
-						print(i)
-						found.append([lev, np.shape(dist_mat)[0], parameters, n_row_fst ])
+						print(f"Found configuration with {np.shape(dist_mat)[0]} points")
+						found.append([np.shape(dist_mat)[0], parameters, number_points_per_side ])
 						configs_found.append(np.shape(dist_mat)[0])
 	return found
 
 
-busquedas = [
+search_conditons = [
 			[39, [1,13], [1,13]],
 			[61, [1,13], [1,13]],
 			[60, [1,13], [1,13]],
-#			[40, [1,9], [1,9]], # frist n_row_fst, then level, then position
-#			  [40, [9,18], [1,9]],
-#			  [40, [1,9], [9,16]],
-#			  [41, [1,9], [1,9]],
-#			  [41, [1,9], [9,16]] 
+			[40, [1,9],  [1,9]], 
+			[40, [9,18], [1,9]],
+			[40, [1,9],  [9,16]],
+			[41, [1,9],  [1,9]],
+			[41, [1,9],  [9,16]] 
 ]
 
 
 found=[]
-for case in busquedas:
-	esta_vez = search_inside_limits(case[0], ws=ws, level= case[1], position=case[2], configs_found=configs_found )
+for case in search_conditons:
+	#number_points_per_side, ws, positions_x, positions_y, configs_found 
+	esta_vez = search_inside_limits(number_points_per_side = case[0], 
+									ws = ws, 
+									positions_x = case[1], 
+									positions_y = case[2], 
+									configs_found = configs_found )
 	found = found + esta_vez
 	configs_found.append([i[0] for i in esta_vez])
 
 
 rows = []
-for n in found:
-	this_scale = n[2][3]
+for prev_result in found:
+	this_scale = prev_result[1][4]
 	best_sofar = 20000
 	this_cords = []
-	x = np.linspace(-30, 30, n[3] + 1)
-	y = np.linspace(-30, 30,  n[3] + 1)
+	x = np.linspace(-30, 30, prev_result[2] + 1)
+	y = np.linspace(-30, 30, prev_result[2] + 1)
 
 	X, Y = np.meshgrid(x[:-1], y[:-1])
 
-	Xf = X.flatten(order='A')
-	Yf = Y.flatten(order='A')
+	Xf = X.flatten(order = 'A')
+	Yf = Y.flatten(order = 'A')
 
 	cordinates = np.array([Xf, Yf, [1]*len(Xf) ])
-
-
 	for i in np.linspace(0.7 * this_scale, 1.3 * this_scale, 10000):
-		parameters = [n[2][0], 0, 0 ,  i]
-		transformed = transform_coordinates(cordinates = cordinates, parameters = parameters, lvl = n[0])
+		parameters = prev_result[1][0:4] + [i] # change only the scaling to be more precise
+		transformed = transform_coordinates(cordinates = cordinates, parameters = parameters)
 		transformed = transformed[np.all(transformed[:,0:2] >= 0, axis = 1) , :]
 		transformed = transformed[np.all(transformed[:,0:2] < ws, axis = 1) , :]
 		dist_mat = distances_torus(transformed[:,0], transformed[:,1], ws)
@@ -164,24 +146,21 @@ for n in found:
 		for i in dist_mat:
 			fila = np.sort(i)
 			sum_cost += np.var(fila[1:5]) 
-				#print(sum_cost)
-		if sum_cost < best_sofar and np.shape(dist_mat)[0]==n[1] :
+
+		if sum_cost < best_sofar and np.shape(dist_mat)[0] == prev_result[0] :
 			best_sofar = sum_cost
 			this_cords = transformed
 
-	# verifica que de hecho tenga 4 vecinos equidistantes
+	# Veryfy 
 	dist_mat_final_test = distances_torus(this_cords[:,0], this_cords[:,1], ws)
 	si_queda = True
-	for i in dist_mat_final_test:
-		fila = np.sort(i)
+	for j in dist_mat_final_test:
+		fila = np.sort(j)
 		if any(abs(np.diff(fila[1:5])) > 0.001):
 			si_queda = False
-	
 	if si_queda:
-		rows.append([n[1]]+[str(i[0])+":"+str(i[1]) for i in this_cords])
+		rows.append([prev_result[0]]+[str(h[0])+":"+str(h[1]) for h in this_cords])
 
-writer = csv.writer(open("configurations/point_configurations_improved.csv", mode="w", newline=""))
+writer = csv.writer(open("point_configurationsx.csv", mode="w", newline=""))
 writer.writerows(rows)
-print("End")
-
-
+print("Fin")
