@@ -22,13 +22,14 @@ mv point_configurations.csv configurations/
 ### Runs of simulations
 The R package *CirclesIntersections*, and the *auxiliary_functions.R* script are needed.
 The conditions and number in which the simulations will be made are hard coded in the Rscript but can be modified.
-
-
+```bash
+Rscript ibm_symmetry_experiment_main.R
+```
 ### Data analysis
 
-*spatial_pattern_randomness_tests.R* Analyse competition experiments, PENDING TO DOCUMENT
-*make_development_animation.R* efefefefefef
-*ibm facilitation_output_analysis.R* wefefefefeff
+*spatial_pattern_randomness_tests.R* Analysis of the spatial randomness of the distribution of populations across values of the kappa paramter
+*make_development_animation.R* Create animations of the development of populations
+*ibm_symmetry_output_analysis.R* Main analysis of the data. Fit bayesian models and test them with outputs from 
 
 
 ## Authors
