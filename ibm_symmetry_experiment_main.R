@@ -1,16 +1,11 @@
-#parametros a probar
+# Code of plant population model
 
-# 1  estructura espacial
-# 2 variacion inicial en tamanios
-# 3 densisdad de plantas
-# 4 asimetria
 
 library(CirclesIntersections)
 source("auxiliary_functions.R")
 
 seed_value <-26
 set.seed(seed_value)
-
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -39,19 +34,19 @@ file_name <- paste("IBM_res_world_reachability_max_initial_sz_n_overcrowding_pla
 
 LHS_param <- matrix(c(sample(uniform_LHS_sample_from_range(lower = 0, 
                                                            upper = 10, 
-                                                           n_samples = n_reps)), # world reach kappa parameter
+                                                           n_samples = n_reps)), # world reach, kappa parameter
                       sample(uniform_LHS_sample_from_range(lower = 0.5, 
                                                            upper = max_S/2, 
-                                                           n_samples = n_reps)), # max initial size,
+                                                           n_samples = n_reps)), # max initial size, S0 parameter
                       sample(floor(uniform_LHS_sample_from_range(lower = -10, 
                                                                  upper = 15,  # lower and upper chosen for rounding error
-                                                                 n_samples = n_reps))), # number of overcrowding plants
+                                                                 n_samples = n_reps))), # number of overcrowding plants, ovr parameter
                       sample(c(uniform_LHS_sample_from_range(lower = 0,
                                                              upper = 1,  
-                                                             n_samples = n_reps %/% 2),
+                                                             n_samples = n_reps %/% 2), # divided en two ranges
                                uniform_LHS_sample_from_range(lower = 1,  
                                                              upper = 100, 
-                                                             n_samples = n_reps %/% 2))) # competition asymmetry parameter, divided en two ranges
+                                                             n_samples = n_reps %/% 2))) # competition symmetry theta parameter
 ),
 nrow = n_reps)
 
@@ -91,8 +86,7 @@ for (re in 1:nrow(LHS_param)){
   
   # modify plant coordinates accoding to spatial disarrangement parameter
   
-  random_angles <- runif(nrow(plantcomm), 
-                         min = 0, max = 2*pi)
+  random_angles <- runif(nrow(plantcomm), min = 0, max = 2*pi)
   
   plantcomm$x <- (plantcomm$x + cos(random_angles) * world_reachablity) %% ws
   plantcomm$y <- (plantcomm$y + sin(random_angles) * world_reachablity) %% ws
@@ -100,26 +94,24 @@ for (re in 1:nrow(LHS_param)){
   # plants have variation in their groth speed, which can be higher tan the preset
   # according to indiviudal_var_growth_rate
   
-  a <- (4 * max_grwth_rt)/ max_S
-  b <- (4 * max_grwth_rt)/ (max_S**2)
+  a <- (4 * max_grwth_rt) / max_S
+  b <- (4 * max_grwth_rt) / (max_S**2)
   
   # compute distance between points
   
-  dx = as.matrix(dist(plantcomm$x,diag=TRUE,upper=TRUE))
-  dx[dx > ws/2] = ws - dx[dx > ws/2]   		### this wraps the interaction effects
-  dy = as.matrix(dist(plantcomm$y,diag=TRUE,upper=TRUE))
-  dy[dy > ws/2] = ws - dy[dy > ws/2]
-  dists = sqrt(dx^2 + dy^2)
+  dx <- as.matrix(dist(plantcomm$x, diag = TRUE, upper = TRUE))
+  dx[dx > ws/2] <- ws - dx[dx > ws/2]   
+  dy <- as.matrix(dist(plantcomm$y, diag = TRUE, upper = TRUE))
+  dy[dy > ws/2] <- ws - dy[dy > ws/2]
+  dists <- sqrt(dx**2 + dy**2)
   
   n <- nrow(plantcomm)
-  
-  critical_distance <- outer(plantcomm$sz, plantcomm$sz, "+")   #max_S * 2
+  critical_distance <- outer(plantcomm$sz, plantcomm$sz, "+")
   neighbours <- apply(dists < critical_distance, MARGIN = 1, sum) - 1
   mean_neighbours <- mean(neighbours)
   sd_neighbours <- sd(neighbours)
   
   # record data at time 0: before plants start interacting
-  
   write(paste(c(re, 
                 0,
                 mean(plantcomm$sz), 
@@ -130,11 +122,11 @@ for (re in 1:nrow(LHS_param)){
                 sd_neighbours,
                 LHS_param[re, ],
                 sd(plantcomm$sz)/mean(plantcomm$sz)), collapse = ","), 
-        file = file_name,  append=TRUE)
+        file = file_name,  append = TRUE)
   
   for (t in 1:timesteps){
     #plot_plantcomm(plantcomm, numbers = TRUE, ws = ws, main=bquote(t==.(t)))
-    #print(paste( "t ", t))
+
     radius_sum <- outer(X = plantcomm$sz, 
                         Y = plantcomm$sz, FUN = "+")
     
@@ -227,8 +219,6 @@ for (re in 1:nrow(LHS_param)){
         resources_obtained_p_ind[j] <- sum(resources_obtained)
         
         if (length(names_original_plantcomm) > 4){
-          #print("usando hack de memoria")
-          
           intersections_list_memory[[length(intersections_list_memory) + 1]] <- list(
             "names_plant" = names_original_plantcomm,
             "intersections" = intersections)
@@ -265,10 +255,10 @@ for (re in 1:nrow(LHS_param)){
                     sd_neighbours,
                     LHS_param[re, ],
                     sd(plantcomm$sz)/mean(plantcomm$sz)), collapse = ","), 
-            file = file_name,  append=TRUE)
+            file = file_name,  append = TRUE)
     }
   }
 }
 
-print("Success")
+print("Fin")
 

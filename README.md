@@ -11,26 +11,24 @@ It is used to study how to identify competition symmetry from plant size variati
 ### Finding configurations of points
 One of the requirements of the model is to have coordinates of N points in 2D torus square space such that every point is at the same distance from the closest 4 points.
 To find configurations of points that meet this requirement we used an iterative process of applying roations and scaling to a set of points in a grid.
-The generate the .csv file with the coordinates of the points necessary to run simulations of plant populations:
+To generate the *point_configurations.csv* file with the coordinates of the points necessary to run simulations of plant populations:
 
 ```bash
 python3 looping_finding_points_config.py
+mkdir configurations
+mv point_configurations.csv configurations/
 ```
+
+### Runs of simulations
+The R package *CirclesIntersections*, and the *auxiliary_functions.R* script are needed.
+The conditions and number in which the simulations will be made are hard coded in the Rscript but can be modified.
 
 
 ### Data analysis
 
-*analyse_community_experiments.R* Analyse competition experiments, PENDING TO DOCUMENT
-
-*analyze_genotypes_over_time.R* Can be used to plot and test on biomass, and morphology metrics over time, using plants growing alone. 
-
-*competitoin_experimentsanalyzer_homevs_visitor.R* Heatmaps and line plots of shoot biomass depending on the number of neighbours.
-
-*genotype_library_summary.R* Basic inspection of root architecture parameters in a genotype pool.
-
-
-*parameter_analyzer_trhough_time.R* Multidimensional analysis of the root architecture parameters as they change over time
-
+*spatial_pattern_randomness_tests.R* Analyse competition experiments, PENDING TO DOCUMENT
+*make_development_animation.R* efefefefefef
+*ibm facilitation_output_analysis.R* wefefefefeff
 
 
 ## Authors
