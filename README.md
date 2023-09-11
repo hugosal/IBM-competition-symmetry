@@ -27,8 +27,10 @@ Rscript ibm_symmetry_experiment_main.R
 ```
 ### Data analysis
 
-*spatial_pattern_randomness_tests.R* Analysis of the spatial randomness of the distribution of populations across values of the kappa paramter
-*make_development_animation.R* Create animations of the development of populations
+*spatial_pattern_randomness_tests.R* Analysis of the spatial randomness of the distribution of populations across values of the kappa paramter.
+
+*make_development_animation.R* Create animations of the development of populations.
+
 *ibm_symmetry_output_analysis.R* Main analysis of the data. Fit bayesian models and test them with outputs from 
 
 

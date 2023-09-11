@@ -7,6 +7,8 @@
  #                               stringsAsFactors = F)
 
 library(Bolstad)
+
+library(extraDistr)
 results_over_time <- read.csv("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry_20000_reps_20ws_50tsteps_26_seed.csv",
                               stringsAsFactors = F)
 
@@ -37,11 +39,27 @@ counter_days <- 1
 train_index <- sample(unique(results_over_time$re), 
                       size = length(unique(results_over_time$re))*2/3, 
                       replace = F)
+
+### revisa si esto hace falta 
+#scaling did not changed
+
+# scaling_mean <- mean(results_over_time$mean_no_competitors)
+# sacaling_SD <- mean(results_over_time$sd_no_competitors)
+# 
+# results_over_time$mean_no_competitors <- results_over_time$mean_no_competitors# - scaling_mean
+# results_over_time$sd_no_competitors <- results_over_time$sd_no_competitors# - sacaling_SD
+
+###
+
+  
+  
 # use 2/3 of simulation as training set, and 1/3 of simulations as testing set
 trainin_repetitions <- results_over_time[results_over_time$re %in% train_index, ]
 testing_repetitions <- results_over_time[!results_over_time$re %in% train_index, ]
 
 trainin_repetitions_at_end <- trainin_repetitions[trainin_repetitions$t ==50, ]
+
+
 
 reg_asym_mult <- bayes.lm(formula = coef_var ~ mean_no_competitors * sd_no_competitors,
                           data = trainin_repetitions_at_end[trainin_repetitions_at_end$comp_symmetry_factor=="Assymetric", ], 
@@ -51,6 +69,36 @@ reg_sym_mult <- bayes.lm(formula = coef_var ~ mean_no_competitors*sd_no_competit
                          data = trainin_repetitions_at_end[trainin_repetitions_at_end$comp_symmetry_factor=="Symmetric", ], 
                          center = F,
                          x = T, y = T, sigma = F, model = T)
+
+table_BFlm <- data.frame(cbind(
+  c(reg_sym_mult$coefficients),
+  c(summary(reg_sym_mult)$std.err),
+  c(reg_asym_mult$coefficients),
+  c(summary(reg_asym_mult)$std.err)
+))
+
+colnames(table_BFlm) <- c("Symetric Mean", "Symetric Std. Error",
+                          "Asymetric Mean", "Asymetric Std. Error")
+row.names(table_BFlm) <- c("Intercept", "Mean N", "SD N", "Mean N:SD N" )
+print(xtable::xtable(table_BFlm,digits=-2, display= c("s","g", "g", "g", "g")), 
+      math.style.exponents = TRUE)
+
+#ejemplo de bolstad 
+# vbetainv <- matrix(c(892.95 ,-113.26, -203.02, -113.26, 3099.49 ,488.82, -203.02, 488.82, 2955.83), ncol =3 )
+# bbeta<- matrix(c(0.02092, 0.00141, 0.00875), ncol = 1)
+
+summary(reg_sym_mult)
+
+vbetainv <- reg_asym_mult$post.var[2:4, 2:4] # needs to be full rank, check with the determinant != 0
+
+bbeta <- reg_asym_mult$coefficients[2:4]
+
+(t(bbeta) %*% vbetainv) %*% bbeta
+#lo otro debe ser menor que 
+
+qchisq(p = 0.05, lower.tail = F, df = ncol(vbetainv))
+
+
 
 for (t_lim in time_limits){
   print(t_lim)
@@ -198,10 +246,10 @@ for (t_lim in time_limits){
   
   
 }
-wdwdwdwd
-print(xtable::xtable(accuracy_meassures, digits =c(1, 2, 2, 2, 2, 2)))
 
+print(xtable::xtable(accuracy_meassures, digits = c(1, 2, 2, 2, 2, 2)))
 
+dedededede
 postscript_file <- TRUE
 if(postscript_file){grDevices::cairo_ps("competiton_per_neighbours.eps",
                                         height = 5, width = 10,
