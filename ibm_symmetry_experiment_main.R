@@ -1,11 +1,16 @@
-# Code of plant population model
 
+## Code for IBM for tree population growth model 
+
+# install.packages("CirclesIntersections")
 
 library(CirclesIntersections)
 source("auxiliary_functions.R")
 
 seed_value <-26
 set.seed(seed_value)
+
+
+# Function to perform a Latin Hypercube Sampling within a range
 
 uniform_LHS_sample_from_range <- function(lower, upper, n_samples){
   limits <- seq(from = lower, to = upper, length.out = n_samples + 1)
@@ -26,7 +31,7 @@ n_reps <- 20000 # number of LHS samples
 intermediate_pop <- 16
 
 # The maximum size of plants such that they have just enough resources is
-max_S <- ws/(sqrt(intermediate_pop) * 2)  # ¡¡¡¡¡¡¡¡¡asumiendo que es un numero cuadrado!!!!!!!!!!!!!!!!!!!!!!!
+max_S <- ws/(sqrt(intermediate_pop) * 2)  
 
 file_name <- paste("IBM_res_world_reachability_max_initial_sz_n_overcrowding_plants_comp_symmetry",
                    "_", n_reps, "_reps_", ws, "ws_", timesteps, "tsteps_", 
