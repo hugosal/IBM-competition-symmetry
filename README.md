@@ -1,6 +1,6 @@
 # IBM-competition-symmetry
 Codes and data analysis related to "What can plant size variation tell us about symmetry of competition?"
-Salinas Hugo, Veneklaas Erik J., Renton Michael 2023.
+Salinas Hugo, Veneklaas Erik J., Trevenen Elizabeth, Renton Michael, 2024.
 
 
 ## Overview
