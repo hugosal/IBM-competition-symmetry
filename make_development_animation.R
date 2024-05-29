@@ -1,5 +1,5 @@
 # Script to make a .gif animation of the development of a simulation
-# Hugo Salinas
+
 
 library(animation)
 library(CirclesIntersections)
@@ -37,9 +37,10 @@ initial.n <- intermediate_pop + n_overcrowding_plants
 config_found <- c(4, 5, 9, 10, 13, 16, 17, 20, 25, 29, 36, 49, 64)
 
 if (! initial.n %in% config_found){
-  print("adj")
+  print("adjusted initial.n")
   initial.n <- config_found[which.min(abs(initial.n - config_found))]
 }
+
 print(paste("Simulating population of size ", unname(initial.n)))
 
 # Plant initial coordinates
@@ -71,11 +72,7 @@ coef_vars <- c(sd(plantcomm$sz)/mean(plantcomm$sz), numeric(timesteps))
 
 saveGIF({
   for (t in 1:timesteps){
-    # layout(mat = matrix(c(1, 1, 1, 0, 2,0),
-    #                     nrow = 3, ncol = 2),
-    #        heights = c(1, 1, 1),
-    #        widths = c(2, 1))
-    
+
     plot_plantcomm(plantcomm, circle = T, numbers = 1:nrow(plantcomm), 
                    ws = ws, main=bquote("Timestep "~.(t)))
     
@@ -87,30 +84,9 @@ saveGIF({
     mtext(text = bquote("Symmetry "==.(round(theta, 2))~","~
                         "Size sampling range" ==.(round(max_initial_size-0.5, 3))),
           side = 1, line = 4)
-    # par(mar=c(5, 4, 2, 2) + 0.1)
-    # hist(plantcomm$sz, xlab="Plant size", freq = T, main="",
-    #      ylim = c(0, initial.n ),
-    #      breaks = seq(from =0, to = max_S * 1.2, length.out = 10))
-    
+
     print(paste( "t ", t))
-    # par(mar = c(5, 4, 4, 4) + 0.1)
-    # plot(times, coef_vars, xlim = c(0, timesteps), ylim = c(0, y_lim_coefvar), 
-    #      xlab = "t", ylab = "Coefficient of Variation", lwd = 2, type = "l", main = "")
-    # 
-    # par(new = TRUE)
-    # plot(times, mean_coef_compt, type = "l", axes = FALSE, bty = "n", lwd=2,
-    #      xlab = "", ylab = "", col = "darkblue", ylim = c(0,1), 
-    #      xlim = c(0, timesteps))
-    # 
-    # axis(side=4, at = seq(0, 1, length = 5))
-    # mtext( bquote("Competition ("~phantom(bar(c))~","~phantom(" %")~ ")" ), 
-    #        side=4, line=3, cex=1.2)
-    # mtext( bquote(phantom("Competition (")~bar(c)~phantom(", "~"%"~")")),
-    #        side=4, line=3, col="darkblue", cex=1.2)
-    # mtext( bquote(phantom("Competition ("~bar(c))~phantom(", ")~"%"~ phantom(")")),
-    #        side=4, line=3, col="magenta", cex=1.2)
-    # 
-    # lines(times, percet_competing_plants, lwd=2, col="magenta")
+  
     par(mar = c(5, 4, 4, 2) + 0.1)
     
     n = nrow(plantcomm)
@@ -220,6 +196,6 @@ saveGIF({
     
   }
   
-}, movie.name = "example_develop_3.gif", interval = 1, 
+}, movie.name = "example_develop_1.gif", interval = 1, 
 ani.width = 1000, ani.height = 1000, clean = TRUE,  ani.res = 150)
     
